@@ -11,6 +11,7 @@ build: gen
 	xcodebuild -quiet -scheme $(SCHEME) -configuration Debug -destination '$(DESTINATION)' build
 
 test: gen
+	./scripts/check-l10n.sh
 	xcodebuild test -quiet -scheme $(SCHEME) -destination '$(DESTINATION)'
 
 run: build

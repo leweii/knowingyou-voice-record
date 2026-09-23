@@ -75,7 +75,7 @@ struct PopoverView: View {
 
             if appState.isRecording {
                 PrimaryButton(
-                    title: "停止录音  \(Self.elapsedString(appState.elapsed))",
+                    title: LocalizedStringKey(String(format: String(localized: "停止录音  %@"), Self.elapsedString(appState.elapsed))),
                     style: .recording,
                     leadingSystemImage: "stop.fill"
                 ) {

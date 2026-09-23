@@ -95,15 +95,32 @@ struct AboutSettingsView: View {
             Text(isEnglish ? "Learn more" : "了解更多")
                 .font(KYFont.aboutSubtitle)
                 .foregroundStyle(KYColor.textPrimary)
-            Button(action: openGitHubPage) {
-                // Placeholder mark until a real GitHub glyph asset lands
-                // (same convention as KYBrand's logo placeholder).
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
-                    .font(.system(size: 18))
-                    .foregroundStyle(KYColor.textPrimary)
-                    .frame(width: 24, height: 24)
+            HStack(spacing: 16) {
+                Button(action: openGitHubPage) {
+                    // Placeholder mark until a real GitHub glyph asset lands
+                    // (same convention as KYBrand's logo placeholder).
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                        .font(.system(size: 18))
+                        .foregroundStyle(KYColor.textPrimary)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+
+                // Not in the reference screenshots — S19 adds this as a new
+                // element (its own spec's deliverable list requires a
+                // third-party-licenses document; this is where it's reachable).
+                Button {
+                    MarkdownViewerWindow.show(
+                        title: isEnglish ? "Third-Party Licenses" : "第三方许可",
+                        document: .thirdPartyLicenses
+                    )
+                } label: {
+                    Text(isEnglish ? "Third-Party Licenses" : "第三方许可")
+                        .font(.system(size: 13))
+                        .foregroundStyle(KYColor.textSecondary)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
 

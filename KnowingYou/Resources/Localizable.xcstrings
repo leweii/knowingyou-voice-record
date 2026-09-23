@@ -1,38 +1,1136 @@
 {
-  "sourceLanguage" : "zh-Hans",
-  "strings" : {
-    "menu.preferences" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preferences…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "偏好设置…"
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "%@会议已结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ meeting has ended"
           }
         }
       }
     },
-    "menu.quit" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quit Knowing You"
+    "中文（简体）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chinese (Simplified)"
           }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "退出知鱼录音"
+        }
+      }
+    },
+    "会议开始提醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting Started Alert"
+          }
+        }
+      }
+    },
+    "会议开始时，主动询问是否开始录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask whether to start recording when a meeting begins"
+          }
+        }
+      }
+    },
+    "会议标题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting Title"
+          }
+        }
+      }
+    },
+    "会议结束提醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting Ended Alert"
+          }
+        }
+      }
+    },
+    "会议识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting Detection"
+          }
+        }
+      }
+    },
+    "使用帮助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "User Guide"
+          }
+        }
+      }
+    },
+    "偏好设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferences"
+          }
+        }
+      }
+    },
+    "偏好设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferences…"
+          }
+        }
+      }
+    },
+    "停止录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop Recording"
+          }
+        }
+      }
+    },
+    "停止录音  %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop Recording  %@"
+          }
+        }
+      }
+    },
+    "全局快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Global Shortcuts"
+          }
+        }
+      }
+    },
+    "关": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "关于": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "内置麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in Microphone"
+          }
+        }
+      }
+    },
+    "删除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "单轨混音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mono Mix"
+          }
+        }
+      }
+    },
+    "去授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Access"
+          }
+        }
+      }
+    },
+    "双轨（左麦克风 右系统）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual Track (L Mic / R System)"
+          }
+        }
+      }
+    },
+    "反馈": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback"
+          }
+        }
+      }
+    },
+    "反馈邮箱尚未配置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback Email Not Configured"
+          }
+        }
+      }
+    },
+    "发现上次未完成的录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found an Unfinished Recording"
+          }
+        }
+      }
+    },
+    "发送邮件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Email"
+          }
+        }
+      }
+    },
+    "在 Dock 中显示图标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show icon in the Dock"
+          }
+        }
+      }
+    },
+    "在 Finder 中显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        }
+      }
+    },
+    "在会议开始和结束时自动开启与停止录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically start and stop recording when a meeting begins and ends"
+          }
+        }
+      }
+    },
+    "在桌面快速查看录音状态并进行操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quickly check recording status and take actions from the desktop"
+          }
+        }
+      }
+    },
+    "好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "完成以下授权后即可开始录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant these permissions to start recording"
+          }
+        }
+      }
+    },
+    "实时标记重要时刻，便于后续回顾": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark important moments in real time for later review"
+          }
+        }
+      }
+    },
+    "导出诊断信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Diagnostics"
+          }
+        }
+      }
+    },
+    "导出诊断日志": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Diagnostics"
+          }
+        }
+      }
+    },
+    "已停用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disabled"
+          }
+        }
+      }
+    },
+    "帮助与反馈": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Help & Feedback"
+          }
+        }
+      }
+    },
+    "应用诊断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Diagnostics"
+          }
+        }
+      }
+    },
+    "开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        }
+      }
+    },
+    "开启后，知鱼录音在后台运行时依然有效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When enabled, shortcuts still work while Knowing You runs in the background"
+          }
+        }
+      }
+    },
+    "开始 / 停止录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start / Stop Recording"
+          }
+        }
+      }
+    },
+    "开始录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Recording"
+          }
+        }
+      }
+    },
+    "开始录音即代表你确认所有参会者均已获悉本次会议将被录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting a recording confirms that all participants have been informed this meeting will be recorded"
+          }
+        }
+      }
+    },
+    "开机时自动启动知鱼录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch Knowing You at login"
+          }
+        }
+      }
+    },
+    "开机自启设置失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Set Launch at Login"
+          }
+        }
+      }
+    },
+    "录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording"
+          }
+        }
+      }
+    },
+    "录音保存路径": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save Location"
+          }
+        }
+      }
+    },
+    "录音前，请确保所有参会者均已获悉会议将被录音，且已根据各地适用法律的规定，获得了所需的同意。知鱼录音不会代你核实同意情况。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before recording, make sure all participants are aware the meeting will be recorded and that you've obtained any consent required by applicable law. Knowing You does not verify consent on your behalf."
+          }
+        }
+      }
+    },
+    "录音已保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording Saved"
+          }
+        }
+      }
+    },
+    "录音已保存提醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording Saved Alert"
+          }
+        }
+      }
+    },
+    "录音快捷组件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording Widget"
+          }
+        }
+      }
+    },
+    "录音文件写入完成后提醒我查看": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notify me when a recording finishes saving"
+          }
+        }
+      }
+    },
+    "录音时显示快捷组件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show widget while recording"
+          }
+        }
+      }
+    },
+    "录音须知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording Notice"
+          }
+        }
+      }
+    },
+    "快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts"
+          }
+        }
+      }
+    },
+    "快速截取并保存会议中的画面": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quickly capture and save a frame from the meeting"
+          }
+        }
+      }
+    },
+    "快速标记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Mark"
+          }
+        }
+      }
+    },
+    "忽略": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignore"
+          }
+        }
+      }
+    },
+    "恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recover"
+          }
+        }
+      }
+    },
+    "恢复默认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Defaults"
+          }
+        }
+      }
+    },
+    "截屏标记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot Mark"
+          }
+        }
+      }
+    },
+    "打开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        }
+      }
+    },
+    "打开系统设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        }
+      }
+    },
+    "按下快捷键…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press a shortcut…"
+          }
+        }
+      }
+    },
+    "支持在以下应用中识别会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detect meetings in the following apps"
+          }
+        }
+      }
+    },
+    "数据与存储": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data & Storage"
+          }
+        }
+      }
+    },
+    "无法写入此位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't write to this location"
+          }
+        }
+      }
+    },
+    "显示语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Language"
+          }
+        }
+      }
+    },
+    "智能选择": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Selection"
+          }
+        }
+      }
+    },
+    "更改…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change…"
+          }
+        }
+      }
+    },
+    "最近录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent Recordings"
+          }
+        }
+      }
+    },
+    "未设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Set"
+          }
+        }
+      }
+    },
+    "本地版 · v%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local · v%@"
+          }
+        }
+      }
+    },
+    "本次会议不再提示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Don't Ask Again for This Meeting"
+          }
+        }
+      }
+    },
+    "查看帮助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View Help"
+          }
+        }
+      }
+    },
+    "检测到%@开始使用麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ started using the microphone"
+          }
+        }
+      }
+    },
+    "检测到会议结束并自动停止录音时通知我": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notify me when a meeting ends and recording stops automatically"
+          }
+        }
+      }
+    },
+    "欢迎使用知鱼录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Knowing You"
+          }
+        }
+      }
+    },
+    "添加": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "添加应用…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add App…"
+          }
+        }
+      }
+    },
+    "用于会议提醒与录音完成提醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used for meeting and recording-saved alerts"
+          }
+        }
+      }
+    },
+    "用于录制会议对方的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used to record other participants' audio"
+          }
+        }
+      }
+    },
+    "用于录制你自己的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used to record your own voice"
+          }
+        }
+      }
+    },
+    "知鱼录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knowing You"
+          }
+        }
+      }
+    },
+    "知鱼录音上次可能没有正常退出，是否把它恢复为可播放的录音文件？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knowing You may not have quit properly last time. Would you like to recover it into a playable recording?"
+          }
+        }
+      }
+    },
+    "知鱼录音会自动选择合适的麦克风，确保录音清晰、不中断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knowing You automatically picks a suitable microphone to keep recordings clear and uninterrupted"
+          }
+        }
+      }
+    },
+    "知鱼录音诊断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knowing You Diagnostics"
+          }
+        }
+      }
+    },
+    "磁盘占用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disk Usage"
+          }
+        }
+      }
+    },
+    "稍后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        }
+      }
+    },
+    "稍后在首次录音时申请": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested later, the first time you record"
+          }
+        }
+      }
+    },
+    "立刻重启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart Now"
+          }
+        }
+      }
+    },
+    "第三方许可": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Third-Party Licenses"
+          }
+        }
+      }
+    },
+    "系统": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        }
+      }
+    },
+    "系统音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Audio"
+          }
+        }
+      }
+    },
+    "系统音频录制": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Audio Recording"
+          }
+        }
+      }
+    },
+    "纪要仅保存在本机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes are only ever saved on this Mac"
+          }
+        }
+      }
+    },
+    "自动录制": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-Record"
+          }
+        }
+      }
+    },
+    "要开始录音吗？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start recording?"
+          }
+        }
+      }
+    },
+    "请换一个组合键。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please choose a different combination."
+          }
+        }
+      }
+    },
+    "还没有录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No recordings yet"
+          }
+        }
+      }
+    },
+    "这个快捷键已被系统占用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shortcut is already used by the system"
+          }
+        }
+      }
+    },
+    "这是开发中的占位设置，正式发布前会替换为真实的反馈邮箱。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a placeholder set during development; it will be replaced with a real feedback address before release."
+          }
+        }
+      }
+    },
+    "退出知鱼录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Knowing You"
+          }
+        }
+      }
+    },
+    "选择": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose"
+          }
+        }
+      }
+    },
+    "选择知鱼录音的界面语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Knowing You's interface language"
+          }
+        }
+      }
+    },
+    "通用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "通知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        }
+      }
+    },
+    "随手记下你的灵感和重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jot down your thoughts and key points"
+          }
+        }
+      }
+    },
+    "隐藏浮窗（本次录音）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide Widget (This Recording)"
+          }
+        }
+      }
+    },
+    "需要重启才能应用语言更改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart Required to Apply Language Change"
+          }
+        }
+      }
+    },
+    "音频格式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio Format"
+          }
+        }
+      }
+    },
+    "音频设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio Settings"
+          }
+        }
+      }
+    },
+    "首次启动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome"
+          }
+        }
+      }
+    },
+    "麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

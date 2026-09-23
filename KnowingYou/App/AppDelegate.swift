@@ -54,11 +54,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard !candidates.isEmpty else { return }
 
         let alert = NSAlert()
-        alert.messageText = "发现上次未完成的录音"
-        alert.informativeText = "知鱼录音上次可能没有正常退出，是否把它恢复为可播放的录音文件？"
-        alert.addButton(withTitle: "恢复")
-        alert.addButton(withTitle: "删除")
-        alert.addButton(withTitle: "稍后")
+        alert.messageText = String(localized: "发现上次未完成的录音")
+        alert.informativeText = String(localized: "知鱼录音上次可能没有正常退出，是否把它恢复为可播放的录音文件？")
+        alert.addButton(withTitle: String(localized: "恢复"))
+        alert.addButton(withTitle: String(localized: "删除"))
+        alert.addButton(withTitle: String(localized: "稍后"))
 
         switch alert.runModal() {
         case .alertFirstButtonReturn:
@@ -86,13 +86,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// popover instead of this menu (see S11's decision record).
     private func configureStatusItem() {
         let menu = NSMenu()
-        menu.addItem(withTitle: "偏好设置…", action: #selector(openSettings), keyEquivalent: ",")
+        menu.addItem(withTitle: String(localized: "偏好设置…"), action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(.separator())
         #if DEBUG
         menu.addItem(debugMenuItem())
         menu.addItem(.separator())
         #endif
-        menu.addItem(withTitle: "退出知鱼录音", action: #selector(quit), keyEquivalent: "q")
+        menu.addItem(withTitle: String(localized: "退出知鱼录音"), action: #selector(quit), keyEquivalent: "q")
         for menuItem in menu.items {
             menuItem.target = self
         }

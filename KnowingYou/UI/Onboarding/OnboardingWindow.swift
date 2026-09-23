@@ -16,7 +16,7 @@ enum OnboardingWindow {
 
         let hosting = NSHostingController(rootView: OnboardingView(onFinish: finish))
         let newWindow = NSWindow(contentViewController: hosting)
-        newWindow.title = "首次启动"
+        newWindow.title = String(localized: "首次启动")
         newWindow.styleMask = [.titled, .closable]
         newWindow.setContentSize(NSSize(width: 480, height: 360))
         newWindow.center()

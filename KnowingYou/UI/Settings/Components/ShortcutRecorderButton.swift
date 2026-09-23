@@ -118,9 +118,9 @@ struct ShortcutRecorderButton: View {
 
     private func showReservedShortcutAlert() {
         let alert = NSAlert()
-        alert.messageText = "这个快捷键已被系统占用"
-        alert.informativeText = "请换一个组合键。"
-        alert.addButton(withTitle: "好")
+        alert.messageText = String(localized: "这个快捷键已被系统占用")
+        alert.informativeText = String(localized: "请换一个组合键。")
+        alert.addButton(withTitle: String(localized: "好"))
         alert.runModal()
     }
 }

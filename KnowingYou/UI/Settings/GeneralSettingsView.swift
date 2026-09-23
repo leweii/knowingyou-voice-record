@@ -105,7 +105,7 @@ struct GeneralSettingsView: View {
             VStack(spacing: 0) {
                 SettingsRow(title: "使用帮助") {
                     OutlinedButton("查看帮助") {
-                        MarkdownViewerWindow.show(title: "使用帮助", document: .help)
+                        MarkdownViewerWindow.show(title: String(localized: "使用帮助"), document: .help)
                     }
                 }
                 SettingsRow(title: "反馈") {
@@ -173,7 +173,7 @@ struct GeneralSettingsView: View {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "选择"
+        panel.prompt = String(localized: "选择")
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             saveDirectoryPath = url.path
@@ -190,6 +190,18 @@ struct GeneralSettingsView: View {
 
     private func sendFeedbackEmail() {
         let email = Bundle.main.infoDictionary?["KYFeedbackEmail"] as? String ?? ""
+        // "feedback@example.invalid" is the checked-in placeholder (S21 must
+        // replace it with a real address before release) — showing an alert
+        // instead of opening a blank/broken mailto is more honest than
+        // silently doing nothing or opening Mail to an address that bounces.
+        guard email != "feedback@example.invalid", !email.isEmpty else {
+            let alert = NSAlert()
+            alert.messageText = String(localized: "反馈邮箱尚未配置")
+            alert.informativeText = String(localized: "这是开发中的占位设置，正式发布前会替换为真实的反馈邮箱。")
+            alert.addButton(withTitle: String(localized: "好"))
+            alert.runModal()
+            return
+        }
         let subject = "知鱼录音反馈 v\(versionString)"
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
         guard let url = URL(string: "mailto:\(email)?subject=\(encodedSubject)") else { return }

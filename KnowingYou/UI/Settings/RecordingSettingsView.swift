@@ -114,7 +114,7 @@ struct RecordingSettingsView: View {
         panel.allowedContentTypes = [.applicationBundle]
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.prompt = "添加"
+        panel.prompt = String(localized: "添加")
         panel.begin { response in
             guard response == .OK, let url = panel.url,
                   let bundle = Bundle(url: url),

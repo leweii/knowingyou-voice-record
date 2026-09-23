@@ -60,7 +60,7 @@ private struct SidebarBottomCard: View {
                     Text("知鱼录音")
                         .font(KYFont.sidebarCardTitle)
                         .foregroundStyle(KYColor.textPrimary)
-                    Text("本地版 · v\(versionString)")
+                    Text(String(format: String(localized: "本地版 · v%@"), versionString))
                         .font(KYFont.sidebarCardSubtitle)
                         .foregroundStyle(KYColor.textGold)
                 }

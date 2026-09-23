@@ -10,6 +10,7 @@ struct MarkdownDocument {
     static let help = MarkdownDocument(zhHansFileName: "帮助", enFileName: "Help")
     static let terms = MarkdownDocument(zhHansFileName: "用户协议", enFileName: "Terms")
     static let privacy = MarkdownDocument(zhHansFileName: "隐私政策", enFileName: "Privacy")
+    static let thirdPartyLicenses = MarkdownDocument(zhHansFileName: "第三方许可", enFileName: "ThirdPartyLicenses")
 
     @MainActor
     fileprivate var currentFileName: String {

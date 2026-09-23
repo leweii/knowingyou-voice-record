@@ -15,7 +15,7 @@ enum SettingsWindowController {
 
         let hosting = NSHostingController(rootView: SettingsRootView())
         let newWindow = NSWindow(contentViewController: hosting)
-        newWindow.title = "偏好设置"
+        newWindow.title = String(localized: "偏好设置")
         newWindow.styleMask = [.titled, .closable, .miniaturizable]
         newWindow.setContentSize(NSSize(width: 720, height: 520))
         newWindow.center()

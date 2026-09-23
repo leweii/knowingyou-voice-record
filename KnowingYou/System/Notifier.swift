@@ -30,9 +30,9 @@ final class Notifier: NSObject, MeetingNotifying {
     private var expiryTasks: [String: Task<Void, Never>] = [:]
 
     func registerCategories() {
-        let start = UNNotificationAction(identifier: NotificationAction.startRecording.rawValue, title: "开始录音", options: [.foreground])
-        let ignoreThisMeeting = UNNotificationAction(identifier: NotificationAction.ignoreThisMeeting.rawValue, title: "本次会议不再提示", options: [])
-        let ignore = UNNotificationAction(identifier: NotificationAction.ignore.rawValue, title: "忽略", options: [])
+        let start = UNNotificationAction(identifier: NotificationAction.startRecording.rawValue, title: String(localized: "开始录音"), options: [.foreground])
+        let ignoreThisMeeting = UNNotificationAction(identifier: NotificationAction.ignoreThisMeeting.rawValue, title: String(localized: "本次会议不再提示"), options: [])
+        let ignore = UNNotificationAction(identifier: NotificationAction.ignore.rawValue, title: String(localized: "忽略"), options: [])
 
         let meetingDetected = UNNotificationCategory(
             identifier: NotificationCategory.meetingDetected.rawValue,
@@ -53,8 +53,8 @@ final class Notifier: NSObject, MeetingNotifying {
         pendingSignals[id] = signal
 
         let content = UNMutableNotificationContent()
-        content.title = "检测到\(signal.app.displayNameKey)开始使用麦克风"
-        content.body = "要开始录音吗？"
+        content.title = String(format: String(localized: "检测到%@开始使用麦克风"), signal.app.displayNameKey)
+        content.body = String(localized: "要开始录音吗？")
         content.categoryIdentifier = NotificationCategory.meetingDetected.rawValue
         content.userInfo = ["requestID": id]
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
@@ -72,7 +72,7 @@ final class Notifier: NSObject, MeetingNotifying {
     func send(meetingEnded appDisplayName: String) {
         guard Preferences.shared.notifyMeetingEnded else { return }
         let content = UNMutableNotificationContent()
-        content.title = "\(appDisplayName)会议已结束"
+        content.title = String(format: String(localized: "%@会议已结束"), appDisplayName)
         content.categoryIdentifier = NotificationCategory.meetingEnded.rawValue
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
@@ -80,7 +80,7 @@ final class Notifier: NSObject, MeetingNotifying {
     func send(recordingSaved audioURL: URL) {
         guard Preferences.shared.notifyRecordingSaved else { return }
         let content = UNMutableNotificationContent()
-        content.title = "录音已保存"
+        content.title = String(localized: "录音已保存")
         content.body = audioURL.lastPathComponent
         content.categoryIdentifier = NotificationCategory.recordingSaved.rawValue
         content.userInfo = ["audioPath": audioURL.path]
