@@ -16,21 +16,21 @@ ui_refs: [§4 R9]
 
 ## 范围
 ### 做
-- `Meeting/KnownApps.swift`：默认清单（**bundle id 以 S06 报告为准**，下表为初值）与匹配函数：
-  | 显示名 key | bundleIDPrefix | kind |
-  |---|---|---|
-  | 腾讯会议 | `com.tencent.meeting` | native |
-  | 飞书 | `com.bytedance.lark` | native |
-  | 钉钉 | `com.alibaba.DingTalkMac` | native |
-  | 企业微信 | `com.tencent.WeWorkMac` | native |
-  | Zoom | `us.zoom.xos` | native |
-  | Microsoft Teams | `com.microsoft.teams` | native |
-  | FaceTime | `com.apple.FaceTime` | native |
-  | Slack | `com.tinyspeck.slackmacgap` | native |
-  | Discord | `com.hnc.Discord` | native |
-  | Webex | `Cisco-Systems.Spark` | native |
-  | 微信 | `com.tencent.xinWeChat` | native |
-  | 浏览器（仅提醒） | `com.google.Chrome`, `com.apple.Safari`, `org.mozilla.firefox`, `com.microsoft.edgemac`, `company.thebrowser.Browser` | browser |
+- `Meeting/KnownApps.swift`：默认清单与匹配函数。bundle id 状态见 S06 spike 报告（`docs/spikes/2026-09-23-process-tap-spike.md`）——4 个已用 `mdls` 静态确认，其余 7 个仍是未经验证的猜测值，落地前用 `mdls -name kMDItemCFBundleIdentifier /Applications/<App>.app` 核实（不需要真的开会）：
+  | 显示名 key | bundleIDPrefix | kind | 状态 |
+  |---|---|---|---|
+  | 腾讯会议 | `com.tencent.meeting` | native | 猜测，未验证（机器上没装） |
+  | 飞书 | `com.bytedance.lark` | native | 猜测，未验证（机器上没装） |
+  | 钉钉 | `com.alibaba.DingTalkMac` | native | 猜测，未验证（机器上没装） |
+  | 企业微信 | `com.tencent.WeWorkMac` | native | 猜测，未验证（机器上没装） |
+  | Zoom | `us.zoom.xos` | native | 猜测，未验证（机器上没装） |
+  | Microsoft Teams | `com.microsoft.teams` | native | 猜测，未验证（机器上没装） |
+  | FaceTime | `com.apple.FaceTime` | native | 猜测，未验证（系统自带但没测） |
+  | Slack | `com.tinyspeck.slackmacgap` | native | **已用 `mdls` 确认** |
+  | Discord | `com.hnc.Discord` | native | **已用 `mdls` 确认** |
+  | Webex | `Cisco-Systems.Spark` | native | 猜测，未验证（机器上没装） |
+  | 微信 | `com.tencent.xinWeChat` | native | **已用 `mdls` 确认** |
+  | 浏览器（仅提醒） | `com.google.Chrome`（**已确认**）, `com.apple.Safari`, `org.mozilla.firefox`, `com.microsoft.edgemac`, `company.thebrowser.Browser` | browser | Chrome 已确认，其余未测 |
   ```swift
   enum KnownApps {
       static let defaults: [KnownApp]

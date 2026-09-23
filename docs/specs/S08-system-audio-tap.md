@@ -31,7 +31,7 @@ ui_refs: []
 - `CATapDescription(stereoGlobalTapButExcludeProcesses: [ownProcessObjectID])`，`muteBehavior = .unmuted`，`isPrivate = true`。聚合设备 `kAudioAggregateDeviceIsPrivateKey = true`，主设备为当前默认输出设备 UID，tap 列表含此 tap 的 UUID。
 - `AudioDeviceCreateIOProcIDWithBlock` 中把 `AudioBufferList` 包成 `AVAudioPCMBuffer`（格式来自 `kAudioTapPropertyFormat`），附 `AudioTimeStamp.mHostTime`。
 - 监听 `kAudioHardwarePropertyDefaultOutputDevice` 变化 → 销毁并重建聚合设备（tap 可复用），发 `.outputDeviceChanged`。
-- `probePermission`：尝试创建 tap，成功即 `.granted` 并立刻销毁；按 S06 记录的错误码区分 `.denied` / `.notDetermined`。
+- `probePermission`：**不要只测 `AudioHardwareCreateProcessTap`**——S06 spike 实测发现 tap 创建阶段在没有真正权限判定意义的环境下也会返回 `noErr`；真正可能触发权限门槛的是 `AudioDeviceStart`。probe 应该走完整链路（建 tap → 建私有聚合设备 → `AudioDeviceCreateIOProcIDWithBlock` → `AudioDeviceStart`，立刻 `stop`），以 `AudioDeviceStart` 的返回值判定 `.granted`/`.denied`；"首次运行到底返回什么、拒绝后返回什么错误码"这两个具体值仍需 Jakob 在他自己没有授权过的干净 Mac 上实测一次（S06 spike 跑的这台机器已经不是"干净"状态，测不出这两个值）。
 - 启动时把 `probePermission` 注入 `Permissions`。
 ### 不做
 - 逐进程 tap（v2）；混音 / 写文件（→ S09）。
@@ -45,6 +45,10 @@ ui_refs: []
 - 自己的 `AudioObjectID`：`kAudioHardwarePropertyTranslatePIDToProcessObject` 传 `getpid()`。
 - 采样率跟随输出设备（44.1k / 48k 都可能），S09 统一重采样。
 - 所有 Core Audio 对象在 `stop()` 里逆序销毁：IOProc → 聚合设备 → tap；崩溃恢复不依赖它们。
+- 写 CAF/中间文件时用 `AVAudioFile(forWriting:settings:commonFormat:interleaved:)`，**必须**显式传 `commonFormat`/`interleaved`，不要只传 `settings` 字典——S06 spike 踩过这个坑：只传 `settings` 会让 `ExtAudioFileWrite` 报 `-50 (paramErr)`，因为 buffer 的真实内存布局和从 `settings` 字典推断出的格式对不上。
+
+### 好消息：这个 spec 可以在这台机器上真实端到端测试
+S06 spike 已经证实：在这台 agent 开发环境里，完整的 tap → 聚合设备 → IOProc → `AudioDeviceStart` 链路全程 `noErr`，且真的能录到系统播放的声音（用 `afplay` 验证过峰值/时机吻合）。这和 S07 的麦克风情况不同（麦克风权限弹窗的 TCC 身份跟到了宿主环境头上，没法测）。所以 S08 落地时**应该**在这台机器上做真实的"播放声音 → tap 录制 → 校验非静音"测试，不要不战而降地把整个 spec 都标成"需要 Jakob 验证"。
 
 ## 验收标准
 - [ ] 播放音乐时 Debug 录 10 秒，CAF 有声且与扬声器听到的一致。

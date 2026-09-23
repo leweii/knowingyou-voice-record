@@ -49,7 +49,7 @@
 | [S03](S03-settings-shell-general.md) | 设置窗口框架 + 通用页 | M0 | S02 | 1.5 | done |
 | [S04](S04-settings-other-pages.md) | 录音 / 快捷键 / 通知 / 关于 四页静态还原 | M0 | S03 | 2 | done |
 | [S05](S05-permissions-onboarding.md) | 权限模块 + 首次启动引导 | M0 | S02 | 1 | done |
-| [S06](S06-spike-process-tap.md) | Spike：Process Tap + 麦克风占用检测验证 | M1 | S01 | 2 | todo |
+| [S06](S06-spike-process-tap.md) | Spike：Process Tap + 麦克风占用检测验证 | M1 | S01 | 2 | done |
 | [S07](S07-mic-capture.md) | MicCapture + 电平计算 | M1 | S01 | 1 | done |
 | [S08](S08-system-audio-tap.md) | SystemAudioTap（移植 AudioCap） | M1 | S06 | 2 | todo |
 | [S09](S09-recording-session.md) | RecordingSession：混音、CAF 写入、m4a 转码、暂停 | M1 | S07, S08 | 2 | todo |
