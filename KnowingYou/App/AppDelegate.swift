@@ -17,9 +17,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         checkForRecoverableRecordings()
         Permissions.shared.systemAudioProbe = { await SystemAudioTap.probePermission() }
         configureMeetingDetection()
-        FloatingWidgetPanel.shared.configure(onStop: { [weak appState] in
-            Task { await appState?.stopRecording() }
-        })
+        FloatingWidgetPanel.shared.configure(
+            onStop: { [weak appState] in
+                Task { await appState?.stopRecording() }
+            },
+            onTogglePause: { [weak appState] in
+                Task { await appState?.togglePause() }
+            },
+            onMark: { [weak appState] in
+                appState?.addMark()
+            },
+            onScreenshot: { [weak appState] in
+                appState?.captureScreenshotMark()
+            },
+            onRevealInFinder: { [weak appState] in
+                guard let phase = appState?.phase, case .recording(let info) = phase else { return }
+                NSWorkspace.shared.activateFileViewerSelecting([info.audioURL])
+            },
+            onOpenSettings: {
+                SettingsWindowController.show()
+            }
+        )
     }
 
     private func configureMeetingDetection() {

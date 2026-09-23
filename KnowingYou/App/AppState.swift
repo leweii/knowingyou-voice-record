@@ -9,6 +9,21 @@ final class AppState {
     var micLevel: Float = 0
     var systemLevel: Float = 0
     var lastError: KYError?
+    private(set) var isPaused = false
+    private(set) var notesStore: NotesStore?
+
+    /// `elapsed` minus total paused duration — freezes visually while
+    /// paused since `elapsed` and the ongoing-pause duration grow at the
+    /// same real-wall-clock rate (S16 decision record: `NoteEntry.offset`
+    /// stays on real clock; only this *displayed* value subtracts pauses).
+    var displayedElapsed: TimeInterval {
+        let completed = pausedIntervals.reduce(0.0) { $0 + $1.upperBound.timeIntervalSince($1.lowerBound) }
+        let ongoing = currentPauseStart.map { Date.now.timeIntervalSince($0) } ?? 0
+        return max(0, elapsed - completed - ongoing)
+    }
+
+    private var pausedIntervals: [ClosedRange<Date>] = []
+    private var currentPauseStart: Date?
 
     /// Installed by `MeetingCoordinator.start()`: lets a manual "开始录音"
     /// pick up the currently-detected meeting app's name instead of always
@@ -63,6 +78,9 @@ final class AppState {
         let startedAt = Date.now
         let baseName = RecordingNaming.baseName(startedAt: startedAt, sourceApp: sourceApp, existing: existing)
         let info = RecordingInfo(baseName: baseName, directory: directory, startedAt: startedAt, sourceApp: sourceApp)
+        let notes = NotesStore(info: info)
+        notesStore = notes
+        FloatingWidgetPanel.shared.attachNotesStore(notes)
 
         let newSession = RecordingSession(config: .init(
             info: info,
@@ -89,8 +107,52 @@ final class AppState {
             eventTask?.cancel()
             eventTask = nil
             session = nil
+            notesStore = nil
             phase = .idle
         }
+    }
+
+    /// E8 in the notes window (S16): pauses both audio capture and the
+    /// visible timer, and drops a "暂停"/"继续" event entry into the notes.
+    func togglePause() async {
+        if isPaused {
+            await resumeRecording()
+        } else {
+            await pauseRecording()
+        }
+    }
+
+    private func pauseRecording() async {
+        guard case .recording = phase, !isPaused, let session else { return }
+        await session.pause()
+        currentPauseStart = .now
+        isPaused = true
+        notesStore?.addEvent("暂停", at: .now)
+        FloatingWidgetPanel.shared.updatePauseState(true)
+    }
+
+    private func resumeRecording() async {
+        guard isPaused, let pauseStart = currentPauseStart, let session else { return }
+        await session.resume()
+        let range = pauseStart...Date.now
+        pausedIntervals.append(range)
+        notesStore?.recordPause(range)
+        currentPauseStart = nil
+        isPaused = false
+        notesStore?.addEvent("继续", at: .now)
+        FloatingWidgetPanel.shared.updatePauseState(false)
+    }
+
+    /// E11 in the notes window.
+    func addMark() {
+        notesStore?.addMark(at: .now)
+    }
+
+    /// E12 in the notes window. Real capture is S18's job — until then this
+    /// just records that the feature isn't wired up yet, per this spec's scope.
+    func captureScreenshotMark() {
+        notesStore?.addEvent("截图功能未就绪", at: .now)
+        AppLog.recording.info("screenshot mark requested before S18 implements real capture")
     }
 
     /// User-initiated stop (the popover's "停止录音" button). Fires
@@ -110,19 +172,37 @@ final class AppState {
     private func stopRecording(notifyUserInitiated: Bool) async {
         guard let session, case .recording(let info) = phase else { return }
         phase = .finalizing(info)
-        do {
-            let finalURL = try await session.stop()
+
+        // Audio finalization and the notes file's final write don't depend
+        // on each other — run them concurrently rather than serially.
+        async let audioResult: Result<URL, Error> = {
+            do { return .success(try await session.stop()) } catch { return .failure(error) }
+        }()
+        async let notesResult: Result<Void, Error> = {
+            do { try await self.notesStore?.finish(endedAt: .now); return .success(()) } catch { return .failure(error) }
+        }()
+
+        switch await audioResult {
+        case .success(let finalURL):
             Notifier.shared.send(recordingSaved: finalURL)
-        } catch {
+        case .failure(let error):
             AppLog.recording.error("recording failed to finalize: \(error, privacy: .public)")
             lastError = error as? KYError
         }
+        if case .failure(let error) = await notesResult {
+            AppLog.storage.error("notes failed to save: \(error, privacy: .public)")
+        }
+
         eventTask?.cancel()
         eventTask = nil
         self.session = nil
+        notesStore = nil
         elapsed = 0
         micLevel = 0
         systemLevel = 0
+        isPaused = false
+        pausedIntervals = []
+        currentPauseStart = nil
         phase = .idle
         RecordingStore.shared.refresh()
         FloatingWidgetPanel.shared.hide()
@@ -141,8 +221,10 @@ final class AppState {
             FloatingWidgetPanel.shared.updateLevel(mic)
         case .elapsed(let value):
             elapsed = value
+            FloatingWidgetPanel.shared.updateElapsed(displayedElapsed)
         case .deviceEvent(let message):
             AppLog.recording.info("device event: \(message, privacy: .public)")
+            notesStore?.addEvent(message, at: .now)
         case .error(let error):
             AppLog.recording.error("session error: \(error, privacy: .public)")
             lastError = error

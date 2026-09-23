@@ -42,9 +42,13 @@ final class NotesStore {
     /// Called the moment the first character of a new entry lands — the
     /// entry's timestamp is fixed at this instant regardless of how long the
     /// user then spends editing it (plan §5.3).
+    /// `id` defaults to a fresh UUID; `NotesEditor` (S16) passes its own
+    /// `NotesEditorModel.Line.id` explicitly instead, so the editor's line
+    /// identity and the store's entry identity are the same UUID and no
+    /// separate mapping table is needed.
     @discardableResult
-    func beginEntry(at wallClock: Date, kind: NoteEntry.Kind = .note) -> NoteEntry.ID {
-        let entry = NoteEntry(id: UUID(), wallClock: wallClock, offset: wallClock.timeIntervalSince(document.startedAt), kind: kind, text: "")
+    func beginEntry(at wallClock: Date, kind: NoteEntry.Kind = .note, id: NoteEntry.ID = UUID()) -> NoteEntry.ID {
+        let entry = NoteEntry(id: id, wallClock: wallClock, offset: wallClock.timeIntervalSince(document.startedAt), kind: kind, text: "")
         document.entries.append(entry)
         markDirty()
         return entry.id
@@ -53,6 +57,16 @@ final class NotesStore {
     func updateEntry(_ id: NoteEntry.ID, text: String) {
         guard let index = document.entries.firstIndex(where: { $0.id == id }) else { return }
         document.entries[index].text = text
+        markDirty()
+    }
+
+    /// Used when the notes editor merges/removes a line (backspace on an
+    /// empty entry, or the two halves of an Enter-split later getting
+    /// deleted) — the on-disk `.md` should never show an entry the user no
+    /// longer has text for.
+    func removeEntry(_ id: NoteEntry.ID) {
+        guard let index = document.entries.firstIndex(where: { $0.id == id }) else { return }
+        document.entries.remove(at: index)
         markDirty()
     }
 
