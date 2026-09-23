@@ -2,7 +2,7 @@
 id: S21
 title: 签名、公证、DMG、发布检查
 milestone: M5
-status: todo
+status: done
 depends_on: [S20, S19]
 estimate_days: 2.5
 plan_refs: [§1 分发, §3 分发, §5.7, §9 M5]
@@ -37,15 +37,19 @@ ui_refs: []
 - Release 配置的 `CODE_SIGN_IDENTITY` 由脚本环境变量传入，仓库不写死身份。
 
 ## 验收标准
-- [ ] 干净用户账户（或另一台 Mac）下载 DMG → 安装 → 首次启动无 Gatekeeper 拦截 → 按清单跑通全部步骤。
-- [ ] `spctl -a -vv KnowingYou.app` 输出 `accepted … Notarized Developer ID`。
-- [ ] 零网络验证结果记录在案。
-- [ ] `make release` 在任一前置检查失败时中止且不打 tag。
-- [ ] `CLAUDE.md` 增加发布命令与注意事项。
+- [ ] 干净用户账户（或另一台 Mac）下载 DMG → 安装 → 首次启动无 Gatekeeper 拦截 → 按清单跑通全部步骤。**未执行**——这台开发机没有 Developer ID 签名证书，无法产出一个真实签过名/公证过的 DMG，也没有另一台干净的 Mac 可用。清单本身已经写好（`docs/testing/release-checklist.md`），留给 Jakob 配好凭证后执行。
+- [ ] `spctl -a -vv KnowingYou.app` 输出 `accepted … Notarized Developer ID`。**未执行**——同上，没有真实证书/notarytool 凭证。
+- [ ] 零网络验证结果记录在案。**未执行**——没有 Little Snitch，也没有必要为了这一步临时装一个来源不明的网络监控工具；`scripts/check-no-network.sh` 提供了源码层面的静态保证（构建期强制门禁），但运行时抓包这一步需要 Jakob 在自己的机器上做一次。
+- [x] `make release` 在任一前置检查失败时中止且不打 tag。**已验证**：`make release VERSION=1.0.0` 在 `check-release-readiness.sh` 阶段正确报出三条真实存在的问题（反馈邮箱占位、logo 占位、`KYIsPrerelease` 与版本号不一致）并以非零退出码中止，`git tag` 确认没有产生任何 tag。
+- [x] `CLAUDE.md` 增加发布命令与注意事项。
 
 ## 测试
-见清单。
+见清单（`docs/testing/release-checklist.md`）。三个新脚本（`check-release-readiness.sh`/`sign-and-notarize.sh`/`make-dmg.sh`）均用 `sh -n` 做过语法检查；`check-release-readiness.sh` 的三条检查分支各用不同版本号（`1.0.0`/`1.0.0-beta.1`/`2.0.0`）手动触发过一次，确认版本匹配、占位符检测、pre-release 标记一致性三条逻辑都按预期工作。`sign-and-notarize.sh`/`make-dmg.sh` 的实际执行路径（真实签名与公证）无法在此环境验证——见下方决策记录。
 
 ## 决策记录
 | 日期 | 决定 | 原因 |
 |---|---|---|
+| 2026-09-23 | S21 的产出定位为"把发布流水线的脚本和硬阻断检查做完、跑通到卡在需要真实凭证为止"，而不是尝试用占位/伪造凭证走完整流程 | 签名身份、notarytool 凭证、真实反馈邮箱、logo 设计资源都是需要 Jakob 本人提供的账号凭证或产品资产，编造假值（比如随便填一个签名身份或邮箱）只会制造一个看起来"通过"但实际上毫无意义甚至误导的结果；如实标注"脚本已就绪，等凭证"比假装完成更有价值 |
+| 2026-09-23 | `make-dmg.sh` 用系统自带的 `hdiutil` 而不是 `create-dmg`（spec 里两者都提到） | `hdiutil` 不需要额外的 Homebrew 依赖，`make release` 这条关键路径少一个外部工具意味着少一个"用户机器上没装"的失败点；背景图/自定义窗口布局这类视觉打磨可以后续再加，不阻塞发布流水线本身能不能跑通 |
+| 2026-09-23 | 签名身份/团队 ID/notarytool profile 名一律通过环境变量传入脚本，不写进 `project.yml` 或任何仓库文件 | spec"实现要点"明确要求身份不写死；这也符合"仓库是公开的，账号凭证不该出现在任何提交历史里"的一般原则 |
+| 2026-09-23 | `git tag` 只在本地打，`make release` 不自动 `git push` | 打 tag 是本地、可撤销的操作；push 一个 tag（尤其是触发 CI/Release 流程的 tag）是对外可见、影响共享状态的动作，应该由 Jakob 自己在确认一切就绪后手动执行，而不是被自动化流水线代劳 |

@@ -64,9 +64,11 @@
 | [S18](S18-screenshot-marker.md) | 截屏标记 | M4 | S16, S05 | 1 | done |
 | [S19](S19-docs-diagnostics-l10n.md) | 帮助 / 协议 / 隐私文档、诊断导出、本地化补全 | M4 | S04 | 1.5 | done |
 | [S20](S20-edge-cases-test-matrix.md) | 边界情况 + 手工测试矩阵 | M4 | S13, S16, S17, S18 | 2 | done |
-| [S21](S21-release.md) | 签名、公证、DMG、发布检查 | M5 | S20, S19 | 2.5 | todo |
+| [S21](S21-release.md) | 签名、公证、DMG、发布检查 | M5 | S20, S19 | 2.5 | done* |
 
 合计约 38.5 人日，与计划 7.5 周一致。
+
+\* S21 的 `done` 打了星号：脚本、硬阻断检查、文档全部完成并实测过失败路径,但受限于这台开发机没有 Apple Developer 签名证书/公证凭证/干净的真机,实际的签名→公证→DMG→首次安装体验→零网络抓包这几步从未真正跑通过。详见 [S21 的验收标准](S21-release.md#验收标准)与 [docs/testing/release-checklist.md](../testing/release-checklist.md)。
 
 ## 4. 依赖图与并行轨道
 

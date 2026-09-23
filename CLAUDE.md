@@ -55,10 +55,17 @@ make build              # gen + scripts/check-no-network.sh + xcodebuild build (
 make test               # gen + scripts/check-l10n.sh + xcodebuild test (Swift Testing, KnowingYouTests)
 make run                # build + open the built .app
 make clean              # remove build output and the generated .xcodeproj
+make release VERSION=x.y.z   # gen + all checks + sign + notarize + DMG + git tag (see below)
 ```
 
 - `make build` and `make test` build the whole app, not a subset — there's no "build/test just this file" shortcut at this scale yet. To run a single test, use `xcodebuild test -scheme KnowingYou -destination 'platform=macOS' -only-testing:KnowingYouTests/PreferencesTests/someTest`.
 - Debug builds sign ad-hoc (`CODE_SIGN_IDENTITY: "-"`); hardened runtime is disabled for ad-hoc signing (expected, not a bug). Real signing/notarization is S21's job, at release time only.
+
+### Release (`make release`, S21)
+
+`make release VERSION=x.y.z` runs, in order: `check-no-network.sh` → `check-l10n.sh` → `check-release-readiness.sh` (hard gate — fails and aborts *before touching signing* if `project.yml`'s `MARKETING_VERSION` doesn't match `VERSION`, if `Info.plist`'s `KYFeedbackEmail` is still the placeholder `feedback@example.invalid`, if `Brand.swift`'s `placeholderSymbolName` is still the placeholder SF Symbol `waveform.circle`, or if `KYIsPrerelease` disagrees with whether `VERSION` has a semver pre-release suffix) → `scripts/sign-and-notarize.sh` (archive → export with a Developer ID Application identity → `codesign --verify` → `notarytool submit --wait` → `stapler staple` → `spctl -a -vv`) → `scripts/make-dmg.sh` (`hdiutil`-built DMG with an `Applications` symlink, itself also signed/notarized/stapled, plus a `SHA256SUMS`) → `git tag v$(VERSION)` (local only — never auto-pushes; pushing a tag/release is a separate, explicit step).
+
+Signing identity, team ID, and notarytool credentials are **never committed to the repo** — `sign-and-notarize.sh`/`make-dmg.sh` read them from the environment (`KY_SIGN_IDENTITY`, `KY_TEAM_ID`, `KY_NOTARY_PROFILE`, the last being a keychain profile name created ahead of time with `xcrun notarytool store-credentials`). This development environment has none of those, plus no clean non-dev Mac to install-test on and no Little Snitch to verify runtime network silence — so `make release` has only been verified up through `check-release-readiness.sh` correctly aborting (confirmed: it fails today because the two real placeholders — feedback email, logo — genuinely haven't been replaced yet, and no tag gets created). See `docs/testing/release-checklist.md` for the exact list of what still needs Jakob's Apple Developer credentials and a real Mac to finish.
 - `scripts/check-no-network.sh` greps `KnowingYou/` for networking APIs and fails the build if any are found — this is what makes "zero network" a build gate instead of a promise. If it fires on legitimate code, the answer is almost never to delete the check.
 - `scripts/check-l10n.sh` fails if any key in `Resources/Localizable.xcstrings` is missing a non-empty English translation (S19) — run it any time you add a new user-facing string.
 
