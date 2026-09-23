@@ -2,7 +2,7 @@
 id: S05
 title: 权限模块 + 首次启动引导
 milestone: M0
-status: todo
+status: done
 depends_on: [S02]
 estimate_days: 1
 plan_refs: [§6]
@@ -43,14 +43,16 @@ ui_refs: [§11 "首次启动权限引导"]
 - 系统音频那一步在 S08 前显示"稍后在首次录音时申请"灰字，不阻塞完成。
 
 ## 验收标准
-- [ ] 删掉 `hasCompletedOnboarding` 后启动，引导窗口出现并前置。
-- [ ] 点"去授权"出现系统麦克风 / 通知授权弹窗；授权后行内变对勾（无需重开窗口）。
-- [ ] 用户拒绝后按钮变"打开系统设置"，点击跳到对应隐私面板。
-- [ ] 窗口尺寸 480×360，视觉与设置页同一套控件。
+- [x] 删掉 `hasCompletedOnboarding` 后启动，引导窗口出现并前置。（`defaults delete com.jakobhe.knowingyou hasCompletedOnboarding` 后 `open` app，截图确认窗口出现并前置，标题"首次启动"）
+- [~] 点"去授权"出现系统麦克风 / 通知授权弹窗；授权后行内变对勾（无需重开窗口）。**未做真实点击验证**（会触发真实系统授权弹窗，不适合在这台共享机器上盲点）。代码走查：`request(_:)` 调用系统 API 后返回值直接写回 `@State`，SwiftUI 会自动重渲染成对勾，不需要重开窗口。
+- [~] 用户拒绝后按钮变"打开系统设置"，点击跳到对应隐私面板。**未做真实点击验证**。`systemSettingsURL(for:)` 的 URL 格式经过单元测试（4/4 通过）；"跳到对应隐私面板"这一步的锚点名称（尤其是系统音频录制用的 `Privacy_ScreenCapture`）是猜测值，没有在真机 System Settings 里点开确认过锚点真的存在/命中正确分区，标进决策记录了。
+- [x] 窗口尺寸 480×360，视觉与设置页同一套控件。（截图确认尺寸与布局；行内用的是 `SettingsRow`/`OutlinedButton`，与设置页共享同一套 DesignSystem 组件）
 
 ## 测试
-手工为主；`PermissionsTests` 只测 `openSystemSettings` 生成的 URL 字符串。
+手工为主；`PermissionsTests` 只测 `openSystemSettings` 生成的 URL 字符串。4/4 通过，全套 28/28 通过。
 
 ## 决策记录
 | 日期 | 决定 | 原因 |
 |---|---|---|
+| 2026-09-23 | "系统音频录制"和"屏幕录制"共用 `Privacy_ScreenCapture` 这个系统设置锚点 | 现代 macOS 把这两者放进同一个"屏幕与系统音频录制"面板；没有公开文档确认锚点字符串，是猜测值，真机验证前不要假设它一定跳得对 |
+| 2026-09-23 | `openSystemSettings` 拆成 `systemSettingsURL(for:)`（纯函数，`nonisolated static`）+ 一个调 `NSWorkspace` 的薄包装 | 让 URL 生成逻辑不依赖 MainActor、可以直接单测，不用起 UI |

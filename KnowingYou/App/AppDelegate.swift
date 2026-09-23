@@ -9,6 +9,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(Preferences.shared.showDockIcon ? .regular : .accessory)
         configureStatusItem()
         AppLog.app.info("KnowingYou launched")
+        if !Preferences.shared.hasCompletedOnboarding {
+            OnboardingWindow.show()
+        }
     }
 
     private func configureStatusItem() {
@@ -38,6 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let debugItem = NSMenuItem(title: "Debug", action: nil, keyEquivalent: "")
         let submenu = NSMenu()
         submenu.addItem(withTitle: "控件画廊", action: #selector(showDesignSystemGallery), keyEquivalent: "")
+        submenu.addItem(withTitle: "重新引导", action: #selector(restartOnboarding), keyEquivalent: "")
         for menuItem in submenu.items {
             menuItem.target = self
         }
@@ -47,6 +51,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showDesignSystemGallery() {
         DesignSystemGalleryWindow.show()
+    }
+
+    @objc private func restartOnboarding() {
+        Preferences.shared.hasCompletedOnboarding = false
+        OnboardingWindow.show()
     }
     #endif
 
