@@ -79,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         submenu.addItem(withTitle: "重新引导", action: #selector(restartOnboarding), keyEquivalent: "")
         submenu.addItem(withTitle: "录 5 秒麦克风到桌面", action: #selector(debugRecordMicToDesktop), keyEquivalent: "")
         submenu.addItem(withTitle: "录 10 秒系统音频到桌面", action: #selector(debugRecordSystemAudioToDesktop), keyEquivalent: "")
+        submenu.addItem(withTitle: "完整录 30 秒（双源）到桌面", action: #selector(debugRecordFullSessionToDesktop), keyEquivalent: "")
         for menuItem in submenu.items {
             menuItem.target = self
         }
@@ -148,6 +149,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 tap.stop()
                 AppLog.recording.error("debug system-audio recording failed: \(error, privacy: .public)")
             }
+        }
+    }
+    /// End-to-end `RecordingSession` smoke test: mic + system audio, mixed,
+    /// written to `.caf`, then transcoded to `.m4a` on stop, exactly as a
+    /// real recording would be. Not run automatically in this environment —
+    /// see S07/S08's decision records (mic TCC misattribution, Process Tap
+    /// creation throttle) for why this can only be verified by hand, on a
+    /// real Mac, by whoever has this build.
+    @objc private func debugRecordFullSessionToDesktop() {
+        Task {
+            let directory = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0]
+            let info = RecordingInfo(
+                baseName: "knowingyou-full-session-test",
+                directory: directory,
+                startedAt: .now,
+                sourceApp: "Debug"
+            )
+            let session = RecordingSession(config: .init(
+                info: info,
+                mic: .smart,
+                captureSystemAudio: true,
+                format: .monoMix
+            ))
+            let watcher = Task {
+                for await event in session.events {
+                    AppLog.recording.info("debug full-session event: \(String(describing: event), privacy: .public)")
+                }
+            }
+            do {
+                try await session.start()
+                try await Task.sleep(for: .seconds(30))
+                let finalURL = try await session.stop()
+                AppLog.recording.info("debug full-session recording finished -> \(finalURL.path, privacy: .public)")
+            } catch {
+                AppLog.recording.error("debug full-session recording failed: \(error, privacy: .public)")
+            }
+            watcher.cancel()
         }
     }
     #endif

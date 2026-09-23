@@ -21,6 +21,15 @@ enum LevelMeter {
         return sqrt(sumOfSquares / count)
     }
 
+    /// Same computation for a plain mono sample array — used by S09's
+    /// `RecordingSession`, which already has extracted Float arrays rather
+    /// than an `AVAudioPCMBuffer` at the point it wants a level reading.
+    static func rms(_ samples: [Float]) -> Float {
+        guard !samples.isEmpty else { return 0 }
+        let sumOfSquares = samples.reduce(Float(0)) { $0 + $1 * $1 }
+        return sqrt(sumOfSquares / Float(samples.count))
+    }
+
     /// dBFS relative to a full-scale sine (amplitude 1.0). Silence maps to
     /// `-.infinity`, not a crash or NaN.
     static func dbfs(_ rms: Float) -> Float {
