@@ -4,7 +4,18 @@ import SwiftUI
 /// The 280×188(+) borderless popover content, P1–P10 per 02-ui-spec.md §8.
 struct PopoverView: View {
     static let width: CGFloat = 280
-    static let disclaimer = "开始录音即代表你确认所有参会者均已获悉本次会议将被录音"
+    /// A computed property, not a `static let` — `MarqueeText.text` and
+    /// `NSPasteboard.setString` both take plain `String`, which (unlike
+    /// `Text`/`LocalizedStringKey`) never auto-localizes a literal passed
+    /// through a stored value. `String(localized:)` needs the literal
+    /// visible at *this* call site to extract the right catalog key, so
+    /// this has to be resolved fresh each time it's read, not cached as a
+    /// stored constant (found via S20's screenshot QA — see its decision
+    /// record; S19 populated a catalog entry for this string that this
+    /// property is what actually makes take effect).
+    static var disclaimer: String {
+        String(localized: "开始录音即代表你确认所有参会者均已获悉本次会议将被录音")
+    }
 
     let appState: AppState
     var store: RecordingStore = .shared
@@ -73,6 +84,17 @@ struct PopoverView: View {
                     .truncationMode(.middle)
             }
 
+            if let signal = meetingActiveSignal {
+                // S20 edge case #14: a visible fallback for when the
+                // MEETING_DETECTED system notification either got denied or
+                // just isn't the kind of thing the user noticed — the orange
+                // status-bar dot led them here, so give them the same choice
+                // the notification would have.
+                Text(String(format: String(localized: "检测到%@开始使用麦克风"), signal.app.displayNameKey))
+                    .font(.system(size: 12))
+                    .foregroundStyle(KYColor.textSecondary)
+            }
+
             if appState.isRecording {
                 PrimaryButton(
                     title: LocalizedStringKey(String(format: String(localized: "停止录音  %@"), Self.elapsedString(appState.elapsed))),
@@ -89,6 +111,11 @@ struct PopoverView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+    }
+
+    private var meetingActiveSignal: MeetingSignal? {
+        if case .meetingActive(let signal) = appState.phase { return signal }
+        return nil
     }
 
     private var currentRecordingInfo: RecordingInfo? {

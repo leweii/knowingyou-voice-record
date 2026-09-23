@@ -3,8 +3,13 @@ import Observation
 
 /// Owns the `NSStatusItem`: left-click toggles the borderless popover
 /// (`PopoverPanel`), right-click (or ⌃-click) shows a plain `NSMenu` with
-/// Preferences/Quit/Debug. The breathing red dot (02-ui-spec.md §8) overlays
-/// the template icon while `appState.isRecording`.
+/// Preferences/Quit/Debug. The breathing dot (02-ui-spec.md §8) overlays the
+/// template icon — red while actually recording, orange while a whitelisted
+/// app is using the mic but nothing's recording yet (`.meetingActive`).
+/// The orange state exists specifically so a user who denied the
+/// notifications permission still has *some* visible sign a meeting was
+/// detected, instead of the confirmation prompt only ever existing as a
+/// system notification they'll never see (S20 edge case #14).
 @MainActor
 final class StatusBarController {
     private let statusItem: NSStatusItem
@@ -62,7 +67,7 @@ final class StatusBarController {
     /// its own — this loop only drives the AppKit-side breathing dot).
     private func trackRecordingState() {
         withObservationTracking {
-            _ = appState.isRecording
+            _ = appState.phase
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.updateDot()
@@ -73,19 +78,26 @@ final class StatusBarController {
     }
 
     private func updateDot() {
-        if appState.isRecording {
-            showDot()
-        } else {
+        switch appState.phase {
+        case .recording:
+            showDot(color: .systemRed)
+        case .meetingActive:
+            showDot(color: .systemOrange)
+        case .idle, .finalizing:
             hideDot()
         }
     }
 
-    private func showDot() {
-        guard dotLayer == nil, let button = statusItem.button, let layer = button.layer else { return }
+    private func showDot(color: NSColor) {
+        guard let button = statusItem.button, let layer = button.layer else { return }
+        if let dotLayer {
+            dotLayer.backgroundColor = color.cgColor
+            return
+        }
         let size: CGFloat = 6
         let dot = CALayer()
         dot.frame = CGRect(x: button.bounds.width - size - 2, y: 2, width: size, height: size)
-        dot.backgroundColor = NSColor.systemRed.cgColor
+        dot.backgroundColor = color.cgColor
         dot.cornerRadius = size / 2
         layer.addSublayer(dot)
 
@@ -104,6 +116,7 @@ final class StatusBarController {
         dotLayer?.removeFromSuperlayer()
         dotLayer = nil
     }
+
 }
 
 /// `NSStatusBarButton.target` must be an `NSObject`; `StatusBarController`

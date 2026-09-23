@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         )
         HotkeyManager.shared.configure(appState: appState)
+        appState.startObservingSystemSleep()
     }
 
     private func configureMeetingDetection() {

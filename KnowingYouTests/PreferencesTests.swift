@@ -52,6 +52,20 @@ struct PreferencesTests {
         #expect(en.hasSuffix("Knowing You"))
     }
 
+    /// S20 edge case #13: switching the display language after
+    /// `saveDirectoryPath` has already been computed/persisted must not
+    /// move the user's existing recordings out from under them.
+    @Test func saveDirectoryPathDoesNotChangeAfterLaterLanguageSwitch() {
+        let prefs = makePreferences()
+        prefs.appLanguage = .zhHans
+        let originalPath = prefs.saveDirectoryPath // first read computes + persists it
+        #expect(originalPath.hasSuffix("知鱼录音"))
+
+        prefs.appLanguage = .en
+        #expect(prefs.saveDirectoryPath == originalPath)
+        #expect(prefs.saveDirectoryPath.hasSuffix("知鱼录音")) // still the old folder, not "Knowing You"
+    }
+
     @Test func writtenValuesPersist() {
         let prefs = makePreferences()
         prefs.autoRecord = true

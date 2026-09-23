@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 
@@ -24,6 +25,12 @@ final class AppState {
 
     private var pausedIntervals: [ClosedRange<Date>] = []
     private var currentPauseStart: Date?
+    /// True only when the *current* pause was auto-triggered by system
+    /// sleep (S20 edge case #2) — distinguishes it from a manual E8 pause,
+    /// so waking doesn't un-pause a recording the user paused on purpose.
+    private var isPausedForSleep = false
+    private var sleepObserver: NSObjectProtocol?
+    private var wakeObserver: NSObjectProtocol?
 
     /// Installed by `MeetingCoordinator.start()`: lets a manual "开始录音"
     /// pick up the currently-detected meeting app's name (and bundle ID
@@ -51,6 +58,35 @@ final class AppState {
         return false
     }
 
+    /// S20 edge case #2 (sleep → wake mid-recording): pauses on
+    /// `willSleepNotification`, auto-resumes on `didWakeNotification`,
+    /// reusing the same pause/resume machinery E8 uses. This was a genuine
+    /// product decision with two other options on the table (see this
+    /// spec's decision record for why "pause across the gap" won over
+    /// "keep recording silence" or "stop and save").
+    func startObservingSystemSleep() {
+        guard sleepObserver == nil else { return }
+        let center = NSWorkspace.shared.notificationCenter
+        sleepObserver = center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in await self?.handleSystemWillSleep() }
+        }
+        wakeObserver = center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in await self?.handleSystemDidWake() }
+        }
+    }
+
+    private func handleSystemWillSleep() async {
+        guard case .recording = phase, !isPaused else { return }
+        isPausedForSleep = true
+        await pauseRecording()
+    }
+
+    private func handleSystemDidWake() async {
+        guard isPausedForSleep else { return }
+        isPausedForSleep = false
+        await resumeRecording()
+    }
+
     /// Manual start from the popover (S11). Resolves a source-app name (a
     /// currently-detected meeting app if any, via `resolveManualRecordingSourceApp`,
     /// else "手动录音") and defers to `startRecording(sourceApp:)`, the same
@@ -61,7 +97,17 @@ final class AppState {
     }
 
     func startRecording(sourceApp: String, sourceBundleIDPrefix: String? = nil) async {
-        guard case .idle = phase else { return }
+        // `.meetingActive` (S20 edge case #14: user manually clicks "开始录音"
+        // in the popover in response to the orange dot / banner, instead of
+        // waiting for or having denied the system notification) is just as
+        // startable as `.idle` — only an already-running recording blocks a
+        // new one.
+        switch phase {
+        case .idle, .meetingActive:
+            break
+        case .recording, .finalizing:
+            return
+        }
         lastError = nil
 
         let micStatus = await Permissions.shared.request(.microphone)
@@ -264,6 +310,19 @@ final class AppState {
         case .error(let error):
             AppLog.recording.error("session error: \(error, privacy: .public)")
             lastError = error
+            if case .systemAudioTapFailed = error {
+                // S20 edge case #11: system audio dropped out (or never
+                // started) mid-recording — the mic keeps going, but the
+                // user should see why the other side's audio is missing.
+                notesStore?.addEvent("系统音频录制失败，本次录音仅包含麦克风声音", at: .now)
+            }
+            if case .diskFull = error {
+                // S20 edge case #3: the session itself already stopped
+                // trying to write. Finalize now so whatever's already on
+                // disk gets transcoded and saved rather than left as a
+                // dangling `.caf` until the user notices and hits stop.
+                Task { await self.stopRecording() }
+            }
         }
     }
 }

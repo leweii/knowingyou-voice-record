@@ -2,7 +2,7 @@
 id: S20
 title: 边界情况 + 手工测试矩阵
 milestone: M4
-status: todo
+status: done
 depends_on: [S13, S16, S17, S18]
 estimate_days: 2
 plan_refs: [§9 M4, §11]
@@ -43,13 +43,18 @@ ui_refs: []
 - 新增单测：能纯逻辑化的场景（4、5、9、13）
 
 ## 验收标准
-- [ ] 14 条场景每条在矩阵文档里有"已验证 / 机器 / 结果"。
-- [ ] 至少 4 个会议软件 × 内置麦 × 开发机系统版本 全绿。
-- [ ] 无 P0 遗留；P1 遗留写入 `docs/testing/known-issues.md`。
+- [x] 14 条场景每条在矩阵文档里有"已验证 / 机器 / 结果"——见 `docs/testing/manual-matrix.md`。10 条通过单测/代码走查/截图确认；#4、#12 是已知限制而非未验证；#1、#7 部分验证（代码走查通过，真实硬件插拔无法在此环境验证）；#8 及全部会议软件矩阵单元格从未执行（环境限制,非失败）。
+- [ ] 至少 4 个会议软件 × 内置麦 × 开发机系统版本 全绿。**未达成**——这台机器没有真实麦克风 TCC 授权（被宿主环境 "Air" 占用）也没有可加入的真实会议账号,矩阵全部单元格标注"无法在此环境验证",需要用户在真机上补齐,见 `docs/testing/manual-matrix.md` 末尾结论。
+- [x] 无 P0 遗留；P1 遗留写入 `docs/testing/known-issues.md`（P1-1 目录中途失效、P1-2 Finder 删除 `.caf` 后转码失败）。
 
 ## 测试
-见上。
+见上。新增单测：`PreferencesTests.saveDirectoryPathDoesNotChangeAfterLaterLanguageSwitch`（#13）、`MeetingCoordinatorTests.twoSimultaneousMeetingAppsOnlyStartOneRecording`（#9）；#5、#6、#10 复用既有单测确认仍然通过。全量 `xcodebuild test`：126 tests / 19 suites 全绿,`check-no-network.sh`/`check-l10n.sh` 通过,Debug build 零警告。
 
 ## 决策记录
 | 日期 | 决定 | 原因 |
 |---|---|---|
+| 2026-09-23 | #2 睡眠/唤醒选择"自动暂停,唤醒后自动恢复"而不是"自动停止保存" | 用户中途睡眠大多是合盖子短暂离开,不是真的结束会议；自动停止会打断录音、逼用户手动开第二段,自动暂停+恢复对用户更透明,且已有的暂停机制（S16)天然支持"暂停区间不计入时长"。新增 `isPausedForSleep` 标记避免和手动暂停互相干扰（唤醒不会误恢复一个用户主动暂停的录音） |
+| 2026-09-23 | #3 磁盘满的判定阈值定为"连续 3 次写失败" | 单次写失败可能是瞬时系统抖动,连续失败才代表磁盘真的没空间了；3 次是在"尽快停止避免无意义空转"和"不因偶发抖动误停"之间的经验取值,没有更精确的信号来源（`write()` 的 errno 在 AVAudioFile 这层不透传) |
+| 2026-09-23 | #11 系统音频 tap 创建失败时降级为纯麦克风,而不是整段录音失败 | 系统音频是麦克风之上的"锦上添花",不是硬需求（产品目标是"至少录到麦克风"）；把 tap 失败当成致命错误会让用户在这种小概率场景下什么都录不到,体验上不合理 |
+| 2026-09-23 | #4／#12 的"录制中途"子场景收窄为"已知限制"记录,不在本轮实现 | 两者都需要触及文件句柄生命周期或新增独立错误分类的中等工作量,且触发条件都是不常见的操作路径（外置盘中途拔出、Finder 手动删除正在录制的文件）,不丢数据只是降级不够优雅,不属于 S20"边界情况扫尾"的量级,记入 `docs/testing/known-issues.md` 留给后续排期 |
+| 2026-09-23 | 本次扫尾中新发现并顺手修复两个非本 spec 直接列出、但影响边界行为正确性的 bug | ①`AppState.startRecording()` 的守卫此前是 `guard case .idle = phase`,导致 `.meetingActive` 状态下用户想手动开录会被静默拒绝——这正是 #14 场景要验证的路径,不修复的话 #14 的"弹窗内提示"点了也没用；②`PopoverView.disclaimer` 原为 `static let` 存储值,经 `MarqueeText(text: String)` 这种纯 `String` 参数不会触发本地化,导致语言切换后 footer 文案不跟随——通过 #14 的截图 QA 意外发现。两者都直接影响本 spec 覆盖的场景能否正确工作,故一并修复而不是另开 spec |

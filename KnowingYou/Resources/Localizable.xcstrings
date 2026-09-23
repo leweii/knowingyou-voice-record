@@ -941,6 +941,16 @@
         }
       }
     },
+    "系统音频录制失败，本次录音仅包含麦克风声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System audio recording failed; this recording only contains microphone audio"
+          }
+        }
+      }
+    },
     "纪要仅保存在本机": {
       "localizations": {
         "en": {

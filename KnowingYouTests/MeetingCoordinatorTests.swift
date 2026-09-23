@@ -126,6 +126,7 @@ private final class FakeProcessObjectReader: ProcessObjectReading, @unchecked Se
 
 private let zoom = KnownApp(bundleIDPrefix: "us.zoom.xos", displayNameKey: "Zoom", kind: .native, isEnabled: true)
 private let chrome = KnownApp(bundleIDPrefix: "com.google.Chrome", displayNameKey: "Chrome", kind: .browser, isEnabled: true)
+private let feishu = KnownApp(bundleIDPrefix: "com.bytedance.lark", displayNameKey: "飞书", kind: .native, isEnabled: true)
 
 @MainActor
 private struct Harness {
@@ -335,5 +336,29 @@ struct MeetingCoordinatorTests {
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))
         #expect(h.control.startCalls == ["Zoom", "Zoom"])
+    }
+
+    /// S20 edge case #9: two whitelisted apps using the mic at once —
+    /// exactly one gets recorded (not both), and it's the same one every
+    /// time given the same inputs (not a coin flip). `MeetingDetector`
+    /// doesn't track per-app "since when," so "earliest" for two apps that
+    /// appear in the very same detector update is necessarily a tie-break
+    /// rather than a true chronological comparison; this test only pins
+    /// down that the tie-break is deterministic, not which app it resolves
+    /// to — see this spec's decision record for why a stricter true-
+    /// chronological-order fix wasn't attempted.
+    @Test func twoSimultaneousMeetingAppsOnlyStartOneRecording() async {
+        // Both native and both auto-record-eligible, so "only one wins" is
+        // actually exercising the tie-break and not just `kind` filtering
+        // (a native app + a browser would trivially only ever record the
+        // native one, regardless of any race).
+        let h = Harness(autoRecord: true, apps: [zoom, feishu])
+        await h.coordinator.start()
+
+        h.reader.set([(pid: 1, bundleID: "us.zoom.xos"), (pid: 2, bundleID: "com.bytedance.lark")])
+        await h.pushDetectorUpdate()
+        await h.advanceClock(.seconds(3))
+
+        #expect(h.control.startCalls.count == 1)
     }
 }

@@ -48,6 +48,11 @@ actor RecordingSession {
     private var micLevelSmoother = LevelSmoother()
     private var systemLevelSmoother = LevelSmoother()
     private var ticksSinceLastElapsedEvent = 0
+    /// S20 edge case #3 (disk full): a handful of consecutive write
+    /// failures (as opposed to one transient blip) means the volume is
+    /// probably actually full/gone — stop trying rather than spin the pump
+    /// loop forever re-failing the same write every 50ms.
+    private var consecutiveWriteFailures = 0
 
     init(config: Config) {
         self.config = config
@@ -109,16 +114,21 @@ actor RecordingSession {
             }
             do {
                 try tap.start()
-            } catch {
-                mic.stop()
-                state = .failed(.systemAudioTapFailed(0))
-                throw error
-            }
-            systemAudioTap = tap
-            systemEventTask = Task { [weak self] in
-                for await event in tap.events {
-                    await self?.handleSystemEvent(event)
+                systemAudioTap = tap
+                systemEventTask = Task { [weak self] in
+                    for await event in tap.events {
+                        await self?.handleSystemEvent(event)
+                    }
                 }
+            } catch {
+                // System audio is a nice-to-have on top of the mic, not a
+                // hard requirement — if the tap can't start (permission
+                // revoked mid-session, macOS's Process Tap throttle, etc.),
+                // fall back to mic-only instead of aborting the whole
+                // recording (S20 edge case #11). The mic is already running
+                // at this point, so we just surface the failure as an event
+                // and keep going.
+                eventContinuation.yield(.error(.systemAudioTapFailed(0)))
             }
         }
 
@@ -226,8 +236,18 @@ actor RecordingSession {
         guard let buffer = Self.makeBuffer(from: mixedSamples, channelCount: channelCount) else { return }
         do {
             try writer?.write(from: buffer)
+            consecutiveWriteFailures = 0
         } catch {
+            consecutiveWriteFailures += 1
             eventContinuation.yield(.error(.encodingFailed("write failed: \(error)")))
+            if consecutiveWriteFailures >= 3 {
+                // Likely the disk is actually full (or the volume vanished) —
+                // stop the pump loop instead of re-failing the same write
+                // every 50ms forever. `AppState` reacts to `.diskFull` by
+                // stopping and finalizing whatever's already on disk.
+                eventContinuation.yield(.error(.diskFull))
+                pumpTask?.cancel()
+            }
         }
     }
 
