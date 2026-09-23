@@ -23,6 +23,7 @@
 - [x] `scripts/make-dmg.sh <version>`：`hdiutil` 打包（选用它而不是 `create-dmg`,避免为了背景图多引入一个 Homebrew 依赖)、`Applications` 软链、DMG 本身也签名+公证+staple、输出 `SHA256SUMS`。
 - [x] `make release VERSION=x.y.z`：串起 `check-no-network` → `check-l10n` → `check-release-readiness` → `sign-and-notarize` → `make-dmg` → `git tag`（本地打 tag,不自动 push,推送是有对外可见影响的动作,留给 Jakob 自己决定时机)。**已实测**：在当前仓库状态下运行 `make release VERSION=1.0.0`,在 `check-release-readiness` 这步正确失败并中止,没有创建任何 tag（`git tag` 命令确认为空)——这正是验收标准里"在任一前置检查失败时中止且不打 tag"要验证的行为。
 - [x] 三个脚本用 `sh -n` 做过语法检查,`check-release-readiness.sh` 的三条检查分支各自用不同版本号手动触发过一次,确认逻辑正确。
+- [x] **补充验证**：Release 配置（不只是 Debug）也编译通过——`xcodebuild build -scheme KnowingYou -configuration Release` 成功产出 ad-hoc 签名（`Sign to Run Locally`, hardened runtime on）的 `KnowingYou.app`。`open` 启动后用 `ps aux` 确认进程稳定运行（未崩溃），首次引导窗口正常弹出，麦克风权限对话框正常触发（虽然像 S07 记录的那样归因到宿主 "Air" 进程，而非应用本身——这是这台远程开发沙盒进程祖先链的固有特性，见 CLAUDE.md）。`spctl -a -vv` 对这个 ad-hoc 签名的 App 判定 `rejected`（预期内，因为没有 Developer ID），但 `open` 命令本身没有被 Gatekeeper 拦截、没有弹出"来自身份不明的开发者"的对话框——这印证了下面这条结论：**本机构建的 App（未被标记隔离属性）不受 Gatekeeper 未公证检查的限制，只有从网络下载的、带 `com.apple.quarantine` 标记的文件才会被拦**。也就是说，Jakob 完全可以在拿到已公证 DMG 之前，直接用 `make run`/`open` 跑一个功能完整的本机版本，S21 剩下没做完的部分只影响"分发给别人下载安装"这条链路，不影响他自己现在就能用。
 
 ## 无法在这台机器上完成、需要 Jakob 补齐的部分
 
