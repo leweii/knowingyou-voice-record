@@ -59,6 +59,7 @@ private final class ManualClock: Clock, @unchecked Sendable {
 private final class FakeRecordingControl: MeetingRecordingControlling {
     private(set) var phase: AppPhase = .idle
     var onUserInitiatedStop: (() -> Void)?
+    var resolveManualRecordingSourceApp: (() async -> (name: String, bundleIDPrefix: String?))?
     private(set) var startCalls: [String] = []
     private(set) var coordinatorStopCount = 0
     private(set) var meetingActiveSignals: [MeetingSignal?] = []
@@ -73,9 +74,9 @@ private final class FakeRecordingControl: MeetingRecordingControlling {
         }
     }
 
-    func startRecording(sourceApp: String) async {
+    func startRecording(sourceApp: String, sourceBundleIDPrefix: String?) async {
         startCalls.append(sourceApp)
-        phase = .recording(RecordingInfo(baseName: "fake", directory: FileManager.default.temporaryDirectory, startedAt: .now, sourceApp: sourceApp))
+        phase = .recording(RecordingInfo(baseName: "fake", directory: FileManager.default.temporaryDirectory, startedAt: .now, sourceApp: sourceApp, sourceBundleIDPrefix: sourceBundleIDPrefix))
     }
 
     func stopRecordingInitiatedByCoordinator() async {

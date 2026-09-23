@@ -26,9 +26,14 @@ final class AppState {
     private var currentPauseStart: Date?
 
     /// Installed by `MeetingCoordinator.start()`: lets a manual "开始录音"
-    /// pick up the currently-detected meeting app's name instead of always
-    /// falling back to "手动录音" (plan §5.3 / S13's scope).
-    var resolveManualRecordingSourceApp: (() async -> String)?
+    /// pick up the currently-detected meeting app's name (and bundle ID
+    /// prefix, for S18's screenshot window-matching) instead of always
+    /// falling back to "手动录音" (plan §5.3 / S13's scope). **Note**: S13
+    /// declared this property but never actually wired it up — S18 is the
+    /// one that both fixes the wiring (see `MeetingCoordinator.start()`)
+    /// and needs the bundle ID half of it, so it's documented here rather
+    /// than pretending it was always complete.
+    var resolveManualRecordingSourceApp: (() async -> (name: String, bundleIDPrefix: String?))?
 
     /// Installed by `MeetingCoordinator.start()`: fires when a recording
     /// ends via `stopRecording()` specifically — i.e. the user pressed
@@ -51,11 +56,11 @@ final class AppState {
     /// else "手动录音") and defers to `startRecording(sourceApp:)`, the same
     /// path S13's `MeetingCoordinator` uses for auto/confirmed starts.
     func startManualRecording() async {
-        let sourceApp = await resolveManualRecordingSourceApp?() ?? "手动录音"
-        await startRecording(sourceApp: sourceApp)
+        let resolved = await resolveManualRecordingSourceApp?() ?? (name: "手动录音", bundleIDPrefix: nil)
+        await startRecording(sourceApp: resolved.name, sourceBundleIDPrefix: resolved.bundleIDPrefix)
     }
 
-    func startRecording(sourceApp: String) async {
+    func startRecording(sourceApp: String, sourceBundleIDPrefix: String? = nil) async {
         guard case .idle = phase else { return }
         lastError = nil
 
@@ -77,7 +82,7 @@ final class AppState {
         let existing = Set(RecordingStore.shared.recordings.map(\.baseName))
         let startedAt = Date.now
         let baseName = RecordingNaming.baseName(startedAt: startedAt, sourceApp: sourceApp, existing: existing)
-        let info = RecordingInfo(baseName: baseName, directory: directory, startedAt: startedAt, sourceApp: sourceApp)
+        let info = RecordingInfo(baseName: baseName, directory: directory, startedAt: startedAt, sourceApp: sourceApp, sourceBundleIDPrefix: sourceBundleIDPrefix)
         let notes = NotesStore(info: info)
         notesStore = notes
         FloatingWidgetPanel.shared.attachNotesStore(notes)
@@ -156,11 +161,34 @@ final class AppState {
         addMark()
     }
 
-    /// E12 in the notes window. Real capture is S18's job — until then this
-    /// just records that the feature isn't wired up yet, per this spec's scope.
+    /// E12 in the notes window / ⌥⌘S. Silently does nothing while idle
+    /// (`notesStore` is nil), same as `addMark`/`quickMark`.
     func captureScreenshotMark() {
-        notesStore?.addEvent("截图功能未就绪", at: .now)
-        AppLog.recording.info("screenshot mark requested before S18 implements real capture")
+        guard case .recording(let info) = phase else { return }
+        let wallClock = Date.now
+        Task {
+            do {
+                let path = try await ScreenshotMarker().capture(
+                    for: info,
+                    sourceBundleIDPrefix: info.sourceBundleIDPrefix,
+                    at: wallClock
+                )
+                notesStore?.addScreenshot(path: path, at: wallClock)
+            } catch {
+                AppLog.recording.error("screenshot capture failed: \(error, privacy: .public)")
+                notesStore?.addEvent("截图失败：\(Self.describeScreenshotFailure(error))", at: wallClock)
+            }
+        }
+    }
+
+    private static func describeScreenshotFailure(_ error: Error) -> String {
+        if case KYError.permissionDenied = error {
+            return "未获得屏幕录制权限"
+        }
+        if case ScreenshotMarker.CaptureError.noMatchingWindow = error {
+            return "找不到可截取的窗口"
+        }
+        return "\(error)"
     }
 
     /// User-initiated stop (the popover's "停止录音" button). Fires
@@ -248,12 +276,13 @@ final class AppState {
 protocol MeetingRecordingControlling: AnyObject {
     var phase: AppPhase { get }
     var onUserInitiatedStop: (() -> Void)? { get set }
+    var resolveManualRecordingSourceApp: (() async -> (name: String, bundleIDPrefix: String?))? { get set }
     /// Sets `.meetingActive(signal)` (a whitelisted app is using the mic,
     /// no recording yet), or clears back to `.idle` when passed `nil`. A
     /// no-op if a recording is already in progress or finalizing — the
     /// coordinator never calls this while `isCurrentlyRecording`.
     func setMeetingActive(_ signal: MeetingSignal?)
-    func startRecording(sourceApp: String) async
+    func startRecording(sourceApp: String, sourceBundleIDPrefix: String?) async
     func stopRecordingInitiatedByCoordinator() async
 }
 

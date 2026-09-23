@@ -56,6 +56,12 @@ final class MeetingCoordinator {
         appState.onUserInitiatedStop = { [weak self] in
             self?.handleUserInitiatedStop()
         }
+        appState.resolveManualRecordingSourceApp = { [weak self] in
+            guard let self else { return (name: "手动录音", bundleIDPrefix: nil) }
+            let snapshot = await self.detector.snapshot()
+            guard let first = snapshot.first else { return (name: "手动录音", bundleIDPrefix: nil) }
+            return (name: first.app.displayNameKey, bundleIDPrefix: first.app.bundleIDPrefix)
+        }
 
         await detector.start()
         updatesTask = Task { [weak self] in
@@ -84,7 +90,7 @@ final class MeetingCoordinator {
         switch action {
         case .startRecording:
             isCurrentlyRecording = true
-            Task { await appState.startRecording(sourceApp: signal.app.displayNameKey) }
+            Task { await appState.startRecording(sourceApp: signal.app.displayNameKey, sourceBundleIDPrefix: signal.app.bundleIDPrefix) }
         case .ignoreThisMeeting:
             silencedBundleIDs.insert(signal.app.bundleIDPrefix)
             currentSignal = nil
@@ -150,7 +156,7 @@ final class MeetingCoordinator {
 
         if shouldAutoRecord {
             isCurrentlyRecording = true
-            Task { await appState.startRecording(sourceApp: user.app.displayNameKey) }
+            Task { await appState.startRecording(sourceApp: user.app.displayNameKey, sourceBundleIDPrefix: user.app.bundleIDPrefix) }
         } else {
             appState.setMeetingActive(signal)
             if !silencedBundleIDs.contains(user.app.bundleIDPrefix) {

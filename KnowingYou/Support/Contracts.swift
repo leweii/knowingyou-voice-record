@@ -52,6 +52,11 @@ struct RecordingInfo: Sendable, Equatable {
     let directory: URL
     let startedAt: Date
     let sourceApp: String
+    /// The triggering `KnownApp.bundleIDPrefix`, when a whitelisted app (not
+    /// a manual "手动录音") started this recording — S18's `ScreenshotMarker`
+    /// uses it to pick which app's window to capture. `nil` for manual
+    /// recordings and any recording started before S18 added this field.
+    var sourceBundleIDPrefix: String? = nil
 
     var audioURL: URL { directory.appendingPathComponent(baseName + ".m4a") }
     var cafURL: URL { directory.appendingPathComponent(baseName + ".caf") }
