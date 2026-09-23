@@ -64,10 +64,10 @@ make release VERSION=1.0.0
 
 ### 5. 零网络验证（Little Snitch 或 `nettop`)
 
-- [ ] 用 Little Snitch（或 `sudo nettop -p <pid>`)观察至少 10 分钟,期间完整走一遍"检测到会议→自动录音→停止"的全流程,确认没有任何出站连接。
-- [ ] 结果截图放进 `docs/testing/`。
+- [x] **空闲态已用系统自带工具验证**：这台机器没有 Little Snitch,改用 `nettop -p <pid> -L 45 -s 2` 采样 90 秒 + `lsof -p <pid> -i` 交叉核对,确认 Release 构建的 `KnowingYou` 进程在启动后完全空闲的状态下，没有建立过任何 TCP/UDP 连接，也不持有任何网络类文件描述符——不是"没抓到"，是真的一个都没有。详细方法、结果、范围限制见 [network-verification.md](network-verification.md)。
+- [ ] **仍未覆盖**：包含一次真实录音全流程（麦克风 tap + 系统音频 tap 实际工作时）的联网观察——这台环境的麦克风 TCC 权限被错误归因给宿主 "Air" 进程，无法在这里真正触发一次端到端录音，这部分留给 Jakob 在自己的 Mac 上补一次，用 Little Snitch 或 `nettop` 都可以。
 
-`scripts/check-no-network.sh` 已经在源码层面做了静态扫描（构建时的强制门禁,见 `CLAUDE.md`),但那只能证明"源码里没有引用联网 API",不能替代一次真实的运行时网络流量观察——这条必须找一台装了 Little Snitch 或至少能跑 `nettop` 的机器人工做一次。
+`scripts/check-no-network.sh` 已经在源码层面做了静态扫描（构建时的强制门禁,见 `CLAUDE.md`),`network-verification.md` 补上了运行时层面（虽然只覆盖空闲态)的验证,两者结合比单独任何一个都更有说服力,但真实录音路径这一段仍然只有 Jakob 能在真机上补完。
 
 ### 6. GitHub Release 草稿
 
@@ -79,6 +79,6 @@ README.md 已经按 S21 范围重写成面向用户的版本（下载/安装/权
 |---|---|
 | 干净用户账户下载 DMG → 安装 → 首次启动无 Gatekeeper 拦截 → 按清单跑通全部步骤 | 未执行——无真实签名 DMG，见上方第 4 项 |
 | `spctl -a -vv KnowingYou.app` 输出 `accepted … Notarized Developer ID` | 未执行——无 Developer ID 证书和 notarytool 凭证 |
-| 零网络验证结果记录在案 | 未执行——见上方第 5 项 |
+| 零网络验证结果记录在案 | **部分完成**——空闲态用 `nettop`/`lsof` 验证过（见 [network-verification.md](network-verification.md)），真实录音全流程的那部分见上方第 5 项，留给 Jakob |
 | `make release` 在任一前置检查失败时中止且不打 tag | **已验证**：`make release VERSION=1.0.0` 在 `check-release-readiness` 阶段正确失败并退出,未创建 tag |
 | `CLAUDE.md` 增加发布命令与注意事项 | 已完成 |

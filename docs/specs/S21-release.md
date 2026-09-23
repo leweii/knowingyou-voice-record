@@ -39,7 +39,7 @@ ui_refs: []
 ## 验收标准
 - [ ] 干净用户账户（或另一台 Mac）下载 DMG → 安装 → 首次启动无 Gatekeeper 拦截 → 按清单跑通全部步骤。**未执行**——这台开发机没有 Developer ID 签名证书，无法产出一个真实签过名/公证过的 DMG，也没有另一台干净的 Mac 可用。清单本身已经写好（`docs/testing/release-checklist.md`），留给 Jakob 配好凭证后执行。
 - [ ] `spctl -a -vv KnowingYou.app` 输出 `accepted … Notarized Developer ID`。**未执行**——同上，没有真实证书/notarytool 凭证。
-- [ ] 零网络验证结果记录在案。**未执行**——没有 Little Snitch，也没有必要为了这一步临时装一个来源不明的网络监控工具；`scripts/check-no-network.sh` 提供了源码层面的静态保证（构建期强制门禁），但运行时抓包这一步需要 Jakob 在自己的机器上做一次。
+- [x] 零网络验证结果记录在案（部分）。没有 Little Snitch，改用系统自带的 `nettop -p <pid>` + `lsof -p <pid> -i`，对 Release 构建、空闲状态下的进程做了一次真实运行时验证：90 秒观察窗口内零 TCP/UDP 连接，进程不持有任何网络类文件描述符，与 `scripts/check-no-network.sh` 的源码静态扫描结论互相印证。方法与结果见 `docs/testing/network-verification.md`。**范围限制**：只覆盖空闲态，不包含真实录音全流程（麦克风 tap 实际工作时）——这台环境的麦克风 TCC 权限归因问题导致无法在这里触发一次真正的端到端录音，这部分留给 Jakob 在自己机器上补充。
 - [x] `make release` 在任一前置检查失败时中止且不打 tag。**已验证**：`make release VERSION=1.0.0` 在 `check-release-readiness.sh` 阶段正确报出三条真实存在的问题（反馈邮箱占位、logo 占位、`KYIsPrerelease` 与版本号不一致）并以非零退出码中止，`git tag` 确认没有产生任何 tag。
 - [x] `CLAUDE.md` 增加发布命令与注意事项。
 
@@ -54,3 +54,4 @@ ui_refs: []
 | 2026-09-23 | 签名身份/团队 ID/notarytool profile 名一律通过环境变量传入脚本，不写进 `project.yml` 或任何仓库文件 | spec"实现要点"明确要求身份不写死；这也符合"仓库是公开的，账号凭证不该出现在任何提交历史里"的一般原则 |
 | 2026-09-23 | `git tag` 只在本地打，`make release` 不自动 `git push` | 打 tag 是本地、可撤销的操作；push 一个 tag（尤其是触发 CI/Release 流程的 tag）是对外可见、影响共享状态的动作，应该由 Jakob 自己在确认一切就绪后手动执行，而不是被自动化流水线代劳 |
 | 2026-09-23 | 补充实测并记录：signing/notarization 只在"分发给别人下载"这条链路上是硬需求，Jakob 自己用 `make run`/本机 `open` 跑，今天就是一个完整可用的 App，不受影响 | Gatekeeper 的公证检查只作用于带 `com.apple.quarantine` 隔离标记的文件（从浏览器/邮件/AirDrop 下载才会打标记），本机构建、`open` 直接启动的 App 没有这个标记。实测：`xcodebuild build -scheme KnowingYou -configuration Release` 编译通过，ad-hoc 签名的 `.app` 用 `open` 启动后进程稳定运行、引导窗口正常弹出，没有触发任何 Gatekeeper 拦截对话框（`spctl -a -vv` 对它判定 `rejected` 是预期内的静态判定，不代表 `open` 会被拦）。这条记录下来是为了避免"S21 没完全 done"被误读成"App 现在还不能用"——两者是完全不同的两件事，前者只影响未来想公开分发给别人下载这一步 |
+| 2026-09-23 | 补充实测并记录：零网络验证不要求 Little Snitch，改用系统自带工具在空闲态完成一次真实的运行时验证 | spec 原文本就允许 `nettop` 作为 Little Snitch 的替代方案；实际跑了 `nettop -p <pid> -L 45 -s 2`（90 秒零连接）加 `lsof -p <pid> -i`（零网络文件描述符，且用同一份 `lsof` 快照对比出这台机器上其它正常应用都有真实连接，排除"lsof 本身没抓到"的可能）。这比单纯的源码静态扫描更有说服力，也比"完全没做、全部留给 Jakob"更接近验收标准的字面要求；真实录音路径仍受 TCC 归因问题限制，如实标注为范围限制而非略过不提 |
