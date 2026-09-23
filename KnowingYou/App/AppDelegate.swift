@@ -5,6 +5,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
     private var statusBarController: StatusBarController?
+    private var meetingCoordinator: MeetingCoordinator?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(Preferences.shared.showDockIcon ? .regular : .accessory)
@@ -15,6 +16,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         checkForRecoverableRecordings()
         Permissions.shared.systemAudioProbe = { await SystemAudioTap.probePermission() }
+        configureMeetingDetection()
+    }
+
+    private func configureMeetingDetection() {
+        Notifier.shared.registerCategories()
+        let detector = MeetingDetector(apps: { await MainActor.run { Preferences.shared.knownApps } })
+        let coordinator = MeetingCoordinator(detector: detector, appState: appState)
+        meetingCoordinator = coordinator
+        Task { await coordinator.start() }
     }
 
     private func checkForRecoverableRecordings() {

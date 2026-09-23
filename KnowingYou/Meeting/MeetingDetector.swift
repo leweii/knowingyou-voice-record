@@ -12,7 +12,7 @@ actor MeetingDetector {
         let bundleIDs: [String]
     }
 
-    private let apps: @Sendable () -> [KnownApp]
+    private let apps: @Sendable () async -> [KnownApp]
     private let reader: ProcessObjectReading
     private let pollInterval: Duration
 
@@ -27,7 +27,7 @@ actor MeetingDetector {
     private var defaultInputListenerBlock: AudioObjectPropertyListenerBlock?
 
     init(
-        apps: @escaping @Sendable () -> [KnownApp],
+        apps: @escaping @Sendable () async -> [KnownApp],
         reader: ProcessObjectReading = CoreAudioProcessObjectReader(),
         pollInterval: Duration = .seconds(2)
     ) {
@@ -63,13 +63,13 @@ actor MeetingDetector {
     /// "start recording right now" to pick a source-app name without waiting
     /// for the next scheduled poll tick.
     func snapshot() async -> [ActiveMicUser] {
-        poll()
+        await poll()
         return lastSnapshot
     }
 
     @discardableResult
-    private func poll() -> [ActiveMicUser] {
-        let enabledApps = apps().filter(\.isEnabled)
+    private func poll() async -> [ActiveMicUser] {
+        let enabledApps = await apps().filter(\.isEnabled)
         let processes = reader.activeInputProcesses()
 
         var grouped: [String: (app: KnownApp, pids: [pid_t], bundleIDs: [String])] = [:]
@@ -182,15 +182,15 @@ actor MeetingDetector {
         deviceListenerIDs = []
     }
 
-    private func handleDeviceListChanged() {
+    private func handleDeviceListChanged() async {
         removeDeviceLevelListeners()
         installDeviceLevelListeners()
-        poll()
+        await poll()
     }
 
-    private func pollFromListener() {
+    private func pollFromListener() async {
         guard pollTask != nil else { return } // ignore stray callbacks after stop()
-        poll()
+        await poll()
     }
 
     private static func allDeviceIDs() -> [AudioObjectID] {
