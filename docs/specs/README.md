@@ -60,7 +60,7 @@
 | [S14](S14-notes-store-markdown.md) | NotesStore + 纪要 Markdown 序列化 | M3 | S10 | 1.5 | done |
 | [S15](S15-floating-widget-pill.md) | 浮窗药丸态 | M3 | S02, S09 | 1.5 | done |
 | [S16](S16-floating-widget-notes.md) | 浮窗纪要窗态 + 尺寸动画 | M3 | S15, S14 | 3 | done |
-| [S17](S17-hotkeys.md) | HotkeyManager + 快捷键页交互 | M4 | S04, S09, S16 | 1.5 | todo |
+| [S17](S17-hotkeys.md) | HotkeyManager + 快捷键页交互 | M4 | S04, S09, S16 | 1.5 | done |
 | [S18](S18-screenshot-marker.md) | 截屏标记 | M4 | S16, S05 | 1 | todo |
 | [S19](S19-docs-diagnostics-l10n.md) | 帮助 / 协议 / 隐私文档、诊断导出、本地化补全 | M4 | S04 | 1.5 | todo |
 | [S20](S20-edge-cases-test-matrix.md) | 边界情况 + 手工测试矩阵 | M4 | S13, S16, S17, S18 | 2 | todo |

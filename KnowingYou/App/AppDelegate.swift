@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 SettingsWindowController.show()
             }
         )
+        HotkeyManager.shared.configure(appState: appState)
     }
 
     private func configureMeetingDetection() {

@@ -148,6 +148,14 @@ final class AppState {
         notesStore?.addMark(at: .now)
     }
 
+    /// The ⌥⌘M global hotkey (S17) — same effect as E11's toolbar button,
+    /// just reachable without the notes window (or even the floating widget)
+    /// being visible. A no-op when idle: `notesStore` is only non-nil while
+    /// recording, so pressing the hotkey outside a recording does nothing.
+    func quickMark() {
+        addMark()
+    }
+
     /// E12 in the notes window. Real capture is S18's job — until then this
     /// just records that the feature isn't wired up yet, per this spec's scope.
     func captureScreenshotMark() {
