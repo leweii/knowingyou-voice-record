@@ -4,7 +4,7 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
-    private var statusItem: NSStatusItem?
+    private var statusBarController: StatusBarController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(Preferences.shared.showDockIcon ? .regular : .accessory)
@@ -49,12 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Builds the right-click/⌃-click context menu only — `StatusBarController`
+    /// owns the actual `NSStatusItem` and routes left-click to the custom
+    /// popover instead of this menu (see S11's decision record).
     private func configureStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        if let button = item.button {
-            button.image = KYBrand.statusBarTemplateImage
-        }
-
         let menu = NSMenu()
         menu.addItem(withTitle: "偏好设置…", action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(.separator())
@@ -66,9 +64,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for menuItem in menu.items {
             menuItem.target = self
         }
-        item.menu = menu
 
-        statusItem = item
+        statusBarController = StatusBarController(appState: appState, contextMenu: menu)
     }
 
     #if DEBUG
