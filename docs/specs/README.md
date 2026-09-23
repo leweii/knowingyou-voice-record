@@ -58,7 +58,7 @@
 | [S12](S12-meeting-detector.md) | MeetingDetector + KnownApps | M2 | S06 | 2.5 | done |
 | [S13](S13-meeting-coordinator-notifications.md) | MeetingCoordinator 状态机 + 通知 + 自动录制 | M2 | S12, S09, S11, S04 | 3.5 | done |
 | [S14](S14-notes-store-markdown.md) | NotesStore + 纪要 Markdown 序列化 | M3 | S10 | 1.5 | done |
-| [S15](S15-floating-widget-pill.md) | 浮窗药丸态 | M3 | S02, S09 | 1.5 | todo |
+| [S15](S15-floating-widget-pill.md) | 浮窗药丸态 | M3 | S02, S09 | 1.5 | done |
 | [S16](S16-floating-widget-notes.md) | 浮窗纪要窗态 + 尺寸动画 | M3 | S15, S14 | 3 | todo |
 | [S17](S17-hotkeys.md) | HotkeyManager + 快捷键页交互 | M4 | S04, S09, S16 | 1.5 | todo |
 | [S18](S18-screenshot-marker.md) | 截屏标记 | M4 | S16, S05 | 1 | todo |

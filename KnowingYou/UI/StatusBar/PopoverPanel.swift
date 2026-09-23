@@ -155,24 +155,3 @@ final class PopoverPanel {
         spaceChangeObserver = nil
     }
 }
-
-/// Clips the hosting view's content to the 14pt rounded rect the spec calls
-/// for, since the panel itself is borderless/transparent with no native
-/// corner radius of its own.
-private final class RoundedHostingView<Content: View>: NSHostingView<Content> {
-    required init(rootView: Content) {
-        super.init(rootView: rootView)
-        configureLayer()
-    }
-
-    @available(*, unavailable)
-    @MainActor required dynamic init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    private func configureLayer() {
-        wantsLayer = true
-        layer?.cornerRadius = 14
-        layer?.masksToBounds = true
-    }
-}

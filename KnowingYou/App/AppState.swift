@@ -80,6 +80,9 @@ final class AppState {
         do {
             try await newSession.start()
             phase = .recording(info)
+            if Preferences.shared.showFloatingWidget {
+                FloatingWidgetPanel.shared.show()
+            }
         } catch {
             AppLog.recording.error("recording failed to start: \(error, privacy: .public)")
             lastError = (error as? KYError) ?? .audioDeviceUnavailable("\(error)")
@@ -122,6 +125,7 @@ final class AppState {
         systemLevel = 0
         phase = .idle
         RecordingStore.shared.refresh()
+        FloatingWidgetPanel.shared.hide()
         if notifyUserInitiated {
             onUserInitiatedStop?()
         }
@@ -134,6 +138,7 @@ final class AppState {
         case .level(let mic, let system):
             micLevel = mic
             systemLevel = system
+            FloatingWidgetPanel.shared.updateLevel(mic)
         case .elapsed(let value):
             elapsed = value
         case .deviceEvent(let message):
