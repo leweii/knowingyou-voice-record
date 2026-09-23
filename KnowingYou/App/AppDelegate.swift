@@ -18,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "偏好设置…", action: nil, keyEquivalent: ","))
+        menu.addItem(withTitle: "偏好设置…", action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(.separator())
         #if DEBUG
         menu.addItem(debugMenuItem())
@@ -49,6 +49,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DesignSystemGalleryWindow.show()
     }
     #endif
+
+    @objc private func openSettings() {
+        SettingsWindowController.show()
+    }
 
     @objc private func quit() {
         NSApp.terminate(nil)

@@ -16,6 +16,7 @@
 5. **提交**：commit message 以 spec ID 开头，如 `S07: MicCapture 设备切换恢复`。一个 spec 可多次 commit。
 6. **范围变化**：发现 spec 需要拆分、合并或改范围，直接改 spec 文件并在决策记录里写原因；新拆出的 spec 用 `S22+` 编号并登记到 §3。
 7. **不要跳过 S06 spike**：M1 / M2 的音频与检测 API 无正式文档，S06 的结论会反写进 S08 / S12 / S13。
+8. **UI spec 的视觉验证方式**（S03 踩出来的经验）：这个开发环境能实际 `open` 编译好的 app、`screencapture` 截图、用临时 `#if DEBUG` 环境变量钩子跳过点击直接打开某个窗口——这些是安全的，做完记得把临时钩子改回去。但**不要用 `CGEvent`/坐标盲点合成鼠标点击**去做交互测试：这台机器是用户在实时使用的真实桌面，我的测试窗口和用户自己的窗口（Slack、System Settings 等）会抢焦点，按预算坐标点击有点到用户真实界面的风险。所以"开关点了之后状态对不对""点按钮之后 Finder/邮件/面板弹没弹出来"这类需要真人点一下的验收项，目前只能：① 代码走查 + 单元测试覆盖点击之外的逻辑，② 标注为待验证，交给 Jakob 在自己方便的时候用 `make run` 肉眼点一遍。同理，`NSStatusItem`（菜单栏图标）在这台机器上实测会被定位到屏幕可见区域之外（多屏 + 远程桌面的某种怪癖，见 S03 决策记录），所以"菜单栏图标真的可见"这条也进不了自动化验证范围，S21 发布前必须找一台非远程操作的真实 Mac 确认一次。
 
 ## 2. 已确认决策（2026-09-23 Jakob 拍板，对应 `01-implementation-plan.md` §12）
 
@@ -44,7 +45,7 @@
 | [S00](S00-shared-contracts.md) | 共享类型与契约 | — | — | 0.5 | done |
 | [S01](S01-project-scaffold.md) | Xcode 工程脚手架与构建命令 | M0 | S00 | 1.5 | done |
 | [S02](S02-design-system.md) | DesignSystem 控件库 | M0 | S01 | 2 | done |
-| [S03](S03-settings-shell-general.md) | 设置窗口框架 + 通用页 | M0 | S02 | 1.5 | todo |
+| [S03](S03-settings-shell-general.md) | 设置窗口框架 + 通用页 | M0 | S02 | 1.5 | done |
 | [S04](S04-settings-other-pages.md) | 录音 / 快捷键 / 通知 / 关于 四页静态还原 | M0 | S03 | 2 | todo |
 | [S05](S05-permissions-onboarding.md) | 权限模块 + 首次启动引导 | M0 | S02 | 1 | todo |
 | [S06](S06-spike-process-tap.md) | Spike：Process Tap + 麦克风占用检测验证 | M1 | S01 | 2 | todo |

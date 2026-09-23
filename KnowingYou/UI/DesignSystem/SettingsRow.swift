@@ -6,6 +6,8 @@ import SwiftUI
 struct SettingsRow<Trailing: View>: View {
     let title: LocalizedStringKey
     var subtitle: LocalizedStringKey?
+    var subtitleColor: Color = KYColor.textSecondary
+    var subtitleLineLimit: Int? = nil
     @ViewBuilder var trailing: Trailing
 
     private var rowHeight: CGFloat { subtitle == nil ? 46 : 60 }
@@ -19,7 +21,9 @@ struct SettingsRow<Trailing: View>: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(KYFont.rowSubtitle)
-                        .foregroundStyle(KYColor.textSecondary)
+                        .foregroundStyle(subtitleColor)
+                        .lineLimit(subtitleLineLimit)
+                        .truncationMode(.middle)
                 }
             }
             Spacer(minLength: 12)
