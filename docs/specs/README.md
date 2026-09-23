@@ -43,7 +43,7 @@
 |---|---|---|---|---|---|
 | [S00](S00-shared-contracts.md) | 共享类型与契约 | — | — | 0.5 | done |
 | [S01](S01-project-scaffold.md) | Xcode 工程脚手架与构建命令 | M0 | S00 | 1.5 | done |
-| [S02](S02-design-system.md) | DesignSystem 控件库 | M0 | S01 | 2 | todo |
+| [S02](S02-design-system.md) | DesignSystem 控件库 | M0 | S01 | 2 | done |
 | [S03](S03-settings-shell-general.md) | 设置窗口框架 + 通用页 | M0 | S02 | 1.5 | todo |
 | [S04](S04-settings-other-pages.md) | 录音 / 快捷键 / 通知 / 关于 四页静态还原 | M0 | S03 | 2 | todo |
 | [S05](S05-permissions-onboarding.md) | 权限模块 + 首次启动引导 | M0 | S02 | 1 | todo |

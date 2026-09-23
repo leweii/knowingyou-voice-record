@@ -61,7 +61,7 @@ Target stack: Swift 6 (strict concurrency, audio pipeline isolated in actors), S
 
 Module layout under `KnowingYou/` (✅ = has real content today, everything else is an empty placeholder directory waiting on its spec):
 - **App/** ✅ — app entry point, delegate, `AppState` (`@MainActor`/`@Observable`: recording state, current recording, recent list)
-- **UI/** — `StatusBarController` (menu bar icon + custom borderless popover panel), `SettingsWindow` (5 pages), `FloatingWidgetPanel` (pill state ⇄ notes state), Onboarding/permissions flow, `DesignSystem/` (custom color tokens, Toggle, outlined button, section headers — deliberately not using default SwiftUI control styles, since the UI must pixel-match the reference)
+- **UI/** — `DesignSystem/` ✅ (custom color/font tokens, `KYToggle`, `OutlinedButton`, `PrimaryButton`, `SectionHeader`, `SettingsRow`, `BorderlessPopup`, `DisclosureRow`, `InfoBanner`, `SidebarItem`, `AppIconView`, plus a DEBUG-only gallery window reachable from the status-bar Debug menu — deliberately not using default SwiftUI control styles, since the UI must pixel-match the reference); `StatusBarController` (menu bar icon + custom borderless popover panel), `SettingsWindow` (5 pages), `FloatingWidgetPanel` (pill state ⇄ notes state), Onboarding/permissions flow still pending
 - **Meeting/** — `MeetingDetector` (actor), `MeetingCoordinator`, `KnownApps` — meeting-app detection state machine
 - **Recording/** — `RecordingSession` (actor) orchestrating `MicCapture` (AVAudioEngine) + `SystemAudioTap` (Core Audio Process Tap) + `Encoder`; `ProcessTap/` ported from insidegui/AudioCap; `LevelMeter`
 - **Storage/** — `RecordingStore`, `RecordingNaming`, `NotesStore`
