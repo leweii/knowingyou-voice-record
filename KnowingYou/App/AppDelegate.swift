@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             OnboardingWindow.show()
         }
         checkForRecoverableRecordings()
+        Permissions.shared.systemAudioProbe = { await SystemAudioTap.probePermission() }
     }
 
     private func checkForRecoverableRecordings() {
@@ -77,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         submenu.addItem(withTitle: "控件画廊", action: #selector(showDesignSystemGallery), keyEquivalent: "")
         submenu.addItem(withTitle: "重新引导", action: #selector(restartOnboarding), keyEquivalent: "")
         submenu.addItem(withTitle: "录 5 秒麦克风到桌面", action: #selector(debugRecordMicToDesktop), keyEquivalent: "")
+        submenu.addItem(withTitle: "录 10 秒系统音频到桌面", action: #selector(debugRecordSystemAudioToDesktop), keyEquivalent: "")
         for menuItem in submenu.items {
             menuItem.target = self
         }
@@ -115,6 +117,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+
+    @objc private func debugRecordSystemAudioToDesktop() {
+        Task {
+            let tap = SystemAudioTap()
+            let outputURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("knowingyou-system-audio-test.caf")
+            let fileBox = DebugAudioFileBox()
+            tap.onBuffer = { buffer, _ in
+                try? fileBox.file?.write(from: buffer)
+            }
+            do {
+                try tap.start()
+                for await event in tap.events {
+                    if case .started(let format) = event {
+                        fileBox.file = try? AVAudioFile(
+                            forWriting: outputURL,
+                            settings: format.settings,
+                            commonFormat: .pcmFormatFloat32,
+                            interleaved: format.isInterleaved
+                        )
+                        AppLog.recording.info("debug system-audio recording started -> \(outputURL.path, privacy: .public)")
+                    }
+                    break
+                }
+                try await Task.sleep(for: .seconds(10))
+                tap.stop()
+                AppLog.recording.info("debug system-audio recording finished")
+            } catch {
+                tap.stop()
+                AppLog.recording.error("debug system-audio recording failed: \(error, privacy: .public)")
+            }
+        }
+    }
     #endif
 
     @objc private func openSettings() {
@@ -125,3 +160,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 }
+
+#if DEBUG
+/// Lets the realtime `onBuffer` closure hold a mutable `AVAudioFile?`
+/// without the compiler flagging a captured `var` across concurrency
+/// boundaries — this is debug-only scaffolding, not app code.
+private final class DebugAudioFileBox: @unchecked Sendable {
+    var file: AVAudioFile?
+}
+#endif
