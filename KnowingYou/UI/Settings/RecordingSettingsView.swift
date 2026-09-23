@@ -29,7 +29,7 @@ struct RecordingSettingsView: View {
         .task {
             let stored = Preferences.shared.knownApps
             if stored.isEmpty {
-                knownApps = Self.placeholderKnownApps
+                knownApps = KnownApps.defaults
                 Preferences.shared.knownApps = knownApps
             } else {
                 knownApps = stored
@@ -204,21 +204,6 @@ struct RecordingSettingsView: View {
         )
     }
 
-    /// Guessed bundle ID prefixes, matching docs/specs/S12's default table.
-    /// S06's spike results will correct these; S12 formally owns this list.
-    static let placeholderKnownApps: [KnownApp] = [
-        KnownApp(bundleIDPrefix: "com.tencent.meeting", displayNameKey: "腾讯会议", kind: .native, isEnabled: true),
-        KnownApp(bundleIDPrefix: "com.bytedance.lark", displayNameKey: "飞书", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "com.alibaba.DingTalkMac", displayNameKey: "钉钉", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "com.tencent.WeWorkMac", displayNameKey: "企业微信", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "us.zoom.xos", displayNameKey: "Zoom", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "com.microsoft.teams", displayNameKey: "Microsoft Teams", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "com.apple.FaceTime", displayNameKey: "FaceTime", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "com.tinyspeck.slackmacgap", displayNameKey: "Slack", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "com.hnc.Discord", displayNameKey: "Discord", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "Cisco-Systems.Spark", displayNameKey: "Webex", kind: .native, isEnabled: false),
-        KnownApp(bundleIDPrefix: "com.tencent.xinWeChat", displayNameKey: "微信", kind: .native, isEnabled: false),
-    ]
 }
 
 #Preview {
