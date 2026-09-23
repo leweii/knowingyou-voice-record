@@ -1,3 +1,4 @@
+import AVFoundation
 import AppKit
 
 @MainActor
@@ -75,6 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let submenu = NSMenu()
         submenu.addItem(withTitle: "控件画廊", action: #selector(showDesignSystemGallery), keyEquivalent: "")
         submenu.addItem(withTitle: "重新引导", action: #selector(restartOnboarding), keyEquivalent: "")
+        submenu.addItem(withTitle: "录 5 秒麦克风到桌面", action: #selector(debugRecordMicToDesktop), keyEquivalent: "")
         for menuItem in submenu.items {
             menuItem.target = self
         }
@@ -89,6 +91,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func restartOnboarding() {
         Preferences.shared.hasCompletedOnboarding = false
         OnboardingWindow.show()
+    }
+
+    @objc private func debugRecordMicToDesktop() {
+        Task {
+            let capture = MicCapture(config: .init(selection: .smart))
+            do {
+                try capture.start()
+                let format = capture.format
+                let outputURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0]
+                    .appendingPathComponent("knowingyou-mic-test.caf")
+                let file = try AVAudioFile(forWriting: outputURL, settings: format.settings)
+                capture.onBuffer = { buffer, _ in
+                    try? file.write(from: buffer)
+                }
+                AppLog.recording.info("debug mic recording started -> \(outputURL.path, privacy: .public)")
+                try await Task.sleep(for: .seconds(5))
+                capture.stop()
+                AppLog.recording.info("debug mic recording finished")
+            } catch {
+                capture.stop()
+                AppLog.recording.error("debug mic recording failed: \(error, privacy: .public)")
+            }
+        }
     }
     #endif
 
