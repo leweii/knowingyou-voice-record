@@ -52,7 +52,7 @@
 | [S07](S07-mic-capture.md) | MicCapture + 电平计算 | M1 | S01 | 1 | todo |
 | [S08](S08-system-audio-tap.md) | SystemAudioTap（移植 AudioCap） | M1 | S06 | 2 | todo |
 | [S09](S09-recording-session.md) | RecordingSession：混音、CAF 写入、m4a 转码、暂停 | M1 | S07, S08 | 2 | todo |
-| [S10](S10-recording-store-naming.md) | RecordingStore + 文件命名 + 崩溃恢复 | M1 | S01 | 1 | todo |
+| [S10](S10-recording-store-naming.md) | RecordingStore + 文件命名 + 崩溃恢复 | M1 | S01 | 1 | done |
 | [S11](S11-statusbar-popover.md) | 菜单栏图标 + 弹窗 | M1 | S02, S09, S10 | 2 | todo |
 | [S12](S12-meeting-detector.md) | MeetingDetector + KnownApps | M2 | S06 | 2.5 | todo |
 | [S13](S13-meeting-coordinator-notifications.md) | MeetingCoordinator 状态机 + 通知 + 自动录制 | M2 | S12, S09, S11, S04 | 3.5 | todo |

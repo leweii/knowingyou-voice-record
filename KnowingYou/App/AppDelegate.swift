@@ -12,6 +12,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !Preferences.shared.hasCompletedOnboarding {
             OnboardingWindow.show()
         }
+        checkForRecoverableRecordings()
+    }
+
+    private func checkForRecoverableRecordings() {
+        let candidates = RecordingStore.shared.recoveryCandidates
+        guard !candidates.isEmpty else { return }
+
+        let alert = NSAlert()
+        alert.messageText = "发现上次未完成的录音"
+        alert.informativeText = "知鱼录音上次可能没有正常退出，是否把它恢复为可播放的录音文件？"
+        alert.addButton(withTitle: "恢复")
+        alert.addButton(withTitle: "删除")
+        alert.addButton(withTitle: "稍后")
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            for url in candidates {
+                Task {
+                    do {
+                        try await RecordingStore.shared.recover(url)
+                    } catch {
+                        AppLog.storage.error("recovery failed for \(url.lastPathComponent, privacy: .public): \(error, privacy: .public)")
+                    }
+                }
+            }
+        case .alertSecondButtonReturn:
+            for url in candidates {
+                try? FileManager.default.removeItem(at: url)
+            }
+            RecordingStore.shared.refresh()
+        default:
+            break
+        }
     }
 
     private func configureStatusItem() {

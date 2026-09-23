@@ -32,7 +32,7 @@ ui_refs: []
 - 两路各自 `AVAudioConverter` → 48 kHz Float32 非交错；用 `hostTime` 换算到样本位置，对齐后进 `Mixer`：`monoMix` = (mic + sys) × 0.5 后软限幅；`dualTrack` = L mic / R sys。
 - 输入间隙（设备切换）补零，保持时间轴连续。
 - `Writer`：`AVAudioFile` 写 `<baseName>.caf`，PCM Int16，每 1 s 落一次盘（`AVAudioFile` 默认逐 buffer 写即可）。
-- `Encoder.swift`：`static func encode(caf: URL, to m4a: URL, format: AudioFormat) async throws`，AAC 96 kbps 单 / 160 kbps 双；成功后删 CAF。独立于 session，S10 崩溃恢复复用。
+- `Encoder.swift`：**S10 已经实现**（`RecordingStore.recover()` 提前需要它），签名是 `static func encode(caf: URL, to m4a: URL, format: AudioFormat) async throws`，AAC 96 kbps 单 / 160 kbps 双，用 `AVAudioFile` 读 CAF 写 AAC m4a。这里直接复用，不要重新实现；如果混音后发现设置不够用再改。CAF 删除的时机在调用方（`RecordingSession.stop()` 与 `RecordingStore.recover()` 各自处理），`Encoder` 本身只负责编码，不删源文件。
 - 暂停：停止写入但采集继续（保持设备状态），记录区间；`elapsed` 按真实时钟继续走（UI 计时是否停由 S16 决定）。
 - 电平：每 50 ms 一次 `.level`。
 - 磁盘空间：启动前检查剩余 ≥ 500 MB，写入错误映射为 `.diskFull` 或 `.saveDirectoryUnwritable`。
@@ -40,8 +40,8 @@ ui_refs: []
 - 文件命名（→ S10，`RecordingInfo` 由调用方给）；UI。
 
 ## 交付物
-- `Recording/{RecordingSession,Mixer,Encoder}.swift`
-- `KnowingYouTests/{MixerTests,EncoderTests}.swift`
+- `Recording/{RecordingSession,Mixer}.swift`（`Encoder.swift` 已由 S10 交付）
+- `KnowingYouTests/MixerTests.swift`（`Encoder` 的编码/删除行为已经在 S10 的 `RecordingStoreTests.recoverTranscodesLeftoverCAFAndDeletesIt` 里用真实合成的 CAF 验证过；这里不用重复写 `EncoderTests`，除非发现新的边界情况）
 - DEBUG 菜单"Debug › 完整录 30 秒（双源）"
 
 ## 实现要点
@@ -60,7 +60,7 @@ ui_refs: []
 - [ ] `captureSystemAudio == false` 时不创建 tap，不触发系统音频权限弹窗。
 
 ## 测试
-`MixerTests`：对齐、补零、限幅、双轨分离（合成数据）。`EncoderTests`：合成 CAF → m4a，时长一致，CAF 被删除。
+`MixerTests`：对齐、补零、限幅、双轨分离（合成数据）。`Encoder` 的编码正确性已由 S10 覆盖。
 
 ## 决策记录
 | 日期 | 决定 | 原因 |
