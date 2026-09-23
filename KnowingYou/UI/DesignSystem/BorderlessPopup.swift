@@ -11,29 +11,43 @@ struct BorderlessPopup<T: Hashable>: View {
 
     @Binding var selection: T
     let options: [Option]
+    /// e.g. the "sparkles" prefix on R4's microphone popup.
+    var leadingSystemImage: String? = nil
 
     var body: some View {
-        // A single `Text` concatenation, not an `HStack` of `Text` + `Image`:
+        // A single `Text` concatenation, not an `HStack` of `Text` + `Image`s:
         // `Menu`'s borderless style treats a multi-view label as (icon, title)
         // and always draws the first `Image` it finds leading, regardless of
         // the HStack's declared order. Concatenated `Text` is one leaf view,
-        // so it keeps the icon trailing as the spec requires.
+        // so every icon stays exactly where we put it in the chain.
         Menu {
             ForEach(options) { option in
                 Button(option.title) { selection = option.value }
             }
         } label: {
-            Text(currentTitle)
-                .font(.system(size: 13))
-                .foregroundStyle(KYColor.textPrimary)
-            + Text("  ")
-            + Text(Image(systemName: "chevron.up.chevron.down"))
-                .font(.system(size: 11))
-                .foregroundStyle(KYColor.textSecondary)
+            labelText
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
+    }
+
+    private var labelText: Text {
+        let title = Text(currentTitle)
+            .font(.system(size: 13))
+            .foregroundStyle(KYColor.textPrimary)
+        let chevron = Text("  ")
+            + Text(Image(systemName: "chevron.up.chevron.down"))
+                .font(.system(size: 11))
+                .foregroundStyle(KYColor.textSecondary)
+
+        guard let leadingSystemImage else {
+            return title + chevron
+        }
+        let leading = Text(Image(systemName: leadingSystemImage))
+            .font(.system(size: 13))
+            .foregroundStyle(KYColor.textSecondary)
+        return leading + Text(" ") + title + chevron
     }
 
     private var currentTitle: LocalizedStringKey {

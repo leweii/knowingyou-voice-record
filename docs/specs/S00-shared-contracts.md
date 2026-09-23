@@ -110,7 +110,7 @@ struct NotesDocument: Sendable, Equatable {
 
 ```swift
 enum AudioFormat: String, Codable, Sendable { case monoMix, dualTrack }
-enum MicSelection: Codable, Sendable, Equatable { case smart; case device(uid: String) }
+enum MicSelection: Codable, Sendable, Equatable, Hashable { case smart; case device(uid: String) }
 enum AppLanguage: String, Codable, Sendable { case zhHans = "zh-Hans", en = "en" }
 ```
 
@@ -174,3 +174,5 @@ OSLog：subsystem `com.jakobhe.knowingyou`，category 与目录同名（`Meeting
 |---|---|---|
 | 2026-09-23 | `NoteEntry.offset` 不扣暂停时长 | 计划 §5.2 "偏移时间按真实时钟连续计"，与 m4a 时间轴对齐更简单 |
 | 2026-09-23 | 新增 `PermissionStatus`（S01 落地时补） | `Permission` 只是"哪种权限"，S05/S08 还需要"当前状态"三态；顺手把 `Permission` 也补成 `Equatable`，否则 `KYError` 无法自动合成 `Equatable` |
+| 2026-09-23 | `MicSelection` 补 `Hashable`（S04 落地时补） | R4 麦克风 Popup 用 `BorderlessPopup<MicSelection>`，S02 的 `BorderlessPopup<T: Hashable>` 要求 T 可哈希 |
+| 2026-09-23 | `KeyboardShortcuts.Name` 三个常量（`toggleRecording`/`quickMark`/`screenshotMark`）声明挪到 `Contracts.swift`（S04 落地时补），不放 S17 的 `HotkeyManager.swift` | S04 的快捷键页要在 S17 之前显示"已存值 / 未设置"，必须引用到具体的 `Name`；两处都声明会冲突，所以提前声明在这里，S17 只负责在首次启动时用 `setShortcut(_:for:)` 写入默认组合键，不再重复声明 `Name`（已同步改 S17 spec） |

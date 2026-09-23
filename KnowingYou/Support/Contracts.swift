@@ -1,4 +1,5 @@
 import Foundation
+import KeyboardShortcuts
 
 // Shared types used across modules. See docs/specs/S00-shared-contracts.md.
 // Add new cross-module types here first; keep this file free of implementation logic.
@@ -103,7 +104,7 @@ enum AudioFormat: String, Codable, Sendable {
     case dualTrack
 }
 
-enum MicSelection: Codable, Sendable, Equatable {
+enum MicSelection: Codable, Sendable, Equatable, Hashable {
     case smart
     case device(uid: String)
 }
@@ -149,4 +150,16 @@ enum KYError: Error, Sendable, Equatable {
     case saveDirectoryUnwritable(URL)
     case diskFull
     case encodingFailed(String)
+}
+
+// MARK: - Global hotkeys
+
+/// Declared here (not in System/HotkeyManager.swift) because the shortcuts
+/// settings page (S04) needs to read/reset them before S17 exists to own
+/// registration. S17 sets the actual default combos at first launch via
+/// `KeyboardShortcuts.setShortcut(_:for:)` rather than redeclaring these.
+extension KeyboardShortcuts.Name {
+    static let toggleRecording = Self("toggleRecording")
+    static let quickMark = Self("quickMark")
+    static let screenshotMark = Self("screenshotMark")
 }
