@@ -28,6 +28,11 @@ struct SidebarItem: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? KYColor.bgSidebarSelected : Color.clear)
             )
+            // `.plain` button style only makes the visibly-drawn content
+            // (icon/text) tappable by default — the trailing `Spacer()` area
+            // needs an explicit hit-testing shape to make the whole 188×40
+            // row clickable, not just its label glyphs.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
