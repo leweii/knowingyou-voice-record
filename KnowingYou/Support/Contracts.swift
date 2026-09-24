@@ -41,6 +41,16 @@ struct KnownApp: Sendable, Hashable, Codable, Identifiable {
     enum Kind: String, Codable, Sendable {
         case native
         case browser
+        /// Matched by `KnownApps.looksLikeMeetingApp` keyword heuristic, not
+        /// an exact bundle-ID match against `KnownApps.defaults`/the user's
+        /// added-apps list (2026-09-24, Jakob's decoupling request — see
+        /// `KnownApps`'s decision record). Deliberately excluded from the
+        /// `== .native` check that gates auto-record in
+        /// `MeetingCoordinator.activate`: a name/bundle-ID keyword match is
+        /// inherently less certain than an exact whitelist hit, so it gets
+        /// the same "always ask, never silently auto-record" treatment as
+        /// `.browser`.
+        case inferred
     }
 }
 

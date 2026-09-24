@@ -42,4 +42,24 @@ enum KnownApps {
             .filter { bundleID == $0.bundleIDPrefix || bundleID.hasPrefix($0.bundleIDPrefix + ".") }
             .max { $0.bundleIDPrefix.count < $1.bundleIDPrefix.count }
     }
+
+    /// Fallback for a process whose bundle ID doesn't match anything in
+    /// `defaults`/the user's added-apps list (2026-09-24, Jakob: "应该跟 app
+    /// 解耦" — detection shouldn't be limited to a hand-maintained list).
+    /// Case-insensitive substring match against the bundle ID only (no
+    /// display-name resolution — `MeetingDetector` only has a bundle ID to
+    /// work with per active process, see its decision record for why that's
+    /// an acceptable scope limit for now). `com.apple.*` is excluded
+    /// entirely: the system's own processes (Siri, Dictation, Control
+    /// Center's various audio helpers, etc.) shouldn't be treated as
+    /// meeting software no matter what a keyword match says — Apple's own
+    /// real meeting app, FaceTime, is already an exact `defaults` entry, so
+    /// it never needs this fallback anyway.
+    static let meetingKeywords = ["meet", "zoom", "webex", "teams", "conference", "会议", "voov"]
+
+    static func looksLikeMeetingApp(bundleID: String) -> Bool {
+        guard !bundleID.hasPrefix("com.apple.") else { return false }
+        let lowercased = bundleID.lowercased()
+        return meetingKeywords.contains { lowercased.contains($0.lowercased()) }
+    }
 }

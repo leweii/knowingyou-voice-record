@@ -127,6 +127,7 @@ private final class FakeProcessObjectReader: ProcessObjectReading, @unchecked Se
 private let zoom = KnownApp(bundleIDPrefix: "us.zoom.xos", displayNameKey: "Zoom", kind: .native)
 private let chrome = KnownApp(bundleIDPrefix: "com.google.Chrome", displayNameKey: "Chrome", kind: .browser)
 private let feishu = KnownApp(bundleIDPrefix: "com.bytedance.lark", displayNameKey: "飞书", kind: .native)
+private let inferredMeetingApp = KnownApp(bundleIDPrefix: "com.startup.SuperMeetPro", displayNameKey: "SuperMeetPro", kind: .inferred)
 
 @MainActor
 private struct Harness {
@@ -210,6 +211,20 @@ struct MeetingCoordinatorTests {
         await h.coordinator.start()
 
         h.reader.set([(pid: 1, bundleID: "com.google.Chrome")])
+        await h.pushDetectorUpdate()
+        await h.advanceClock(.seconds(3))
+
+        #expect(h.control.startCalls.isEmpty)
+    }
+
+    /// 2026-09-24: a keyword-inferred app (not an exact whitelist match) gets
+    /// the same treatment as a browser — always ask, never silently
+    /// auto-record, since the match itself is less certain than an exact hit.
+    @Test func inferredAppWithAutoRecordOnOnlyNotifiesNeverAutoRecords() async {
+        let h = Harness(autoRecord: true, apps: [inferredMeetingApp])
+        await h.coordinator.start()
+
+        h.reader.set([(pid: 1, bundleID: "com.startup.SuperMeetPro")])
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))
 

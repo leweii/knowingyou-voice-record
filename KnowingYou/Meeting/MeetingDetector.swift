@@ -76,7 +76,7 @@ actor MeetingDetector {
 
         var grouped: [String: (app: KnownApp, pids: [pid_t], bundleIDs: [String])] = [:]
         for (pid, bundleID) in processes {
-            guard let match = KnownApps.match(bundleID: bundleID, in: knownApps) else { continue }
+            guard let match = KnownApps.match(bundleID: bundleID, in: knownApps) ?? Self.inferredMatch(for: bundleID) else { continue }
             var entry = grouped[match.bundleIDPrefix] ?? (match, [], [])
             entry.pids.append(pid)
             entry.bundleIDs.append(bundleID)
@@ -91,6 +91,18 @@ actor MeetingDetector {
         lastSnapshot = newSnapshot
         updatesContinuation.yield(newSnapshot)
         return newSnapshot
+    }
+
+    /// Synthesizes a `.inferred`-kind `KnownApp` for a process that didn't
+    /// match the whitelist by bundle ID but whose bundle ID looks like
+    /// meeting software (see `KnownApps.looksLikeMeetingApp`). The display
+    /// name is the best guess available from a bundle ID alone (its last
+    /// dot-separated component) — `MeetingDetector` only ever sees a bundle
+    /// ID per process, not a resolved running-app name.
+    private static func inferredMatch(for bundleID: String) -> KnownApp? {
+        guard KnownApps.looksLikeMeetingApp(bundleID: bundleID) else { return nil }
+        let guessedName = bundleID.split(separator: ".").last.map(String.init) ?? bundleID
+        return KnownApp(bundleIDPrefix: bundleID, displayNameKey: guessedName, kind: .inferred)
     }
 
     // MARK: - Listeners (latency-tightening only; the 2s poll above is what

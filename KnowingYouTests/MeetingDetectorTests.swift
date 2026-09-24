@@ -94,4 +94,25 @@ struct MeetingDetectorTests {
         let snapshot = await detector.snapshot()
         #expect(snapshot.isEmpty)
     }
+
+    /// 2026-09-24: a process not in the whitelist but whose bundle ID looks
+    /// like meeting software still shows up, tagged `.inferred` rather than
+    /// silently dropped — see `KnownApps.looksLikeMeetingApp`'s decision record.
+    @Test func unknownBundleIDMatchingAKeywordIsInferred() async {
+        let reader = FakeProcessObjectReader()
+        let detector = MeetingDetector(apps: { KnownApps.defaults }, reader: reader)
+        reader.set([(pid: 1, bundleID: "com.startup.SuperMeetPro")])
+        let snapshot = await detector.snapshot()
+        #expect(snapshot.count == 1)
+        #expect(snapshot.first?.app.kind == .inferred)
+        #expect(snapshot.first?.app.displayNameKey == "SuperMeetPro")
+    }
+
+    @Test func unknownAppleBundleIDIsNeverInferredEvenWithAKeyword() async {
+        let reader = FakeProcessObjectReader()
+        let detector = MeetingDetector(apps: { KnownApps.defaults }, reader: reader)
+        reader.set([(pid: 1, bundleID: "com.apple.SomeMeetingHelper")])
+        let snapshot = await detector.snapshot()
+        #expect(snapshot.isEmpty)
+    }
 }

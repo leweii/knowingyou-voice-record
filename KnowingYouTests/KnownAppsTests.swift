@@ -35,4 +35,29 @@ struct KnownAppsTests {
         let match = KnownApps.match(bundleID: "com.tencent.xinWeChat.helper", in: apps)
         #expect(match?.displayNameKey == "微信")
     }
+
+    // MARK: - looksLikeMeetingApp (2026-09-24 keyword-heuristic fallback)
+
+    @Test func looksLikeMeetingAppMatchesKnownKeywords() {
+        #expect(KnownApps.looksLikeMeetingApp(bundleID: "com.somecompany.SuperMeetPro"))
+        #expect(KnownApps.looksLikeMeetingApp(bundleID: "io.example.zoomclone"))
+        #expect(KnownApps.looksLikeMeetingApp(bundleID: "com.startup.会议助手"))
+    }
+
+    @Test func looksLikeMeetingAppIsCaseInsensitive() {
+        #expect(KnownApps.looksLikeMeetingApp(bundleID: "com.company.ZOOMISH"))
+    }
+
+    @Test func looksLikeMeetingAppRejectsUnrelatedBundleIDs() {
+        #expect(!KnownApps.looksLikeMeetingApp(bundleID: "com.apple.Notes"))
+        #expect(!KnownApps.looksLikeMeetingApp(bundleID: "com.spotify.client"))
+    }
+
+    @Test func looksLikeMeetingAppAlwaysRejectsAppleBundleIDsEvenWithAKeyword() {
+        // Apple's own processes (Siri, Dictation, Control Center audio
+        // helpers, etc.) shouldn't trip the heuristic no matter what's in
+        // the name — FaceTime is already an exact `defaults` entry, so real
+        // Apple meeting software never needs this fallback anyway.
+        #expect(!KnownApps.looksLikeMeetingApp(bundleID: "com.apple.SomeMeetingHelper"))
+    }
 }
