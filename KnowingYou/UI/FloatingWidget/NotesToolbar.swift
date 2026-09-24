@@ -44,7 +44,13 @@ struct NotesToolbar: View {
                     .foregroundStyle(KYColor.textPrimary)
                     .monospacedDigit()
             }
-            .position(x: 240, y: Self.toolbarCenterY)
+            // Centered at the midpoint between the stop button's right edge
+            // (110+28=138) and the flag button's left edge (306-28=278) —
+            // 208, not the old 240 — so the gap from the level meter to the
+            // stop button equals the gap from the timer to the flag button
+            // regardless of how wide the timer text is (Jakob found these
+            // two gaps visibly unequal on a real Mac, 2026-09-24).
+            .position(x: 208, y: Self.toolbarCenterY)
 
             OutlinedToolbarButton(systemImage: "flag", action: onMark)
                 .position(x: 306, y: Self.toolbarCenterY)

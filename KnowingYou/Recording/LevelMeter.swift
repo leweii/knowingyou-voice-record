@@ -36,6 +36,21 @@ enum LevelMeter {
         guard rms > 0 else { return -.infinity }
         return 20 * log10(rms)
     }
+
+    /// Maps raw linear RMS onto the 0...1 scale `LevelMeterView`'s thresholds
+    /// (0.1/0.3/0.5/0.7/0.85) expect. Feeding linear RMS straight into those
+    /// thresholds was the bug behind "the meter never moves while talking"
+    /// (found 2026-09-24 by Jakob on a real Mac): normal conversational
+    /// speech sits around -30…-15 dBFS, which is only ~0.03–0.18 in *linear*
+    /// amplitude — well under even the first 0.1 threshold — so the meter
+    /// only ever lit up for near-clipping volume. This rescales using a dB
+    /// floor instead, since loudness (and the segments' visual thresholds)
+    /// is a perceptual/logarithmic quantity, not a linear one.
+    static func normalizedLevel(fromRMS rms: Float, floorDB: Float = -50) -> Float {
+        let db = dbfs(rms)
+        guard db.isFinite else { return 0 }
+        return min(max((db - floorDB) / -floorDB, 0), 1)
+    }
 }
 
 /// Fast attack / slow decay smoother for UI level meters (pill/notes-window

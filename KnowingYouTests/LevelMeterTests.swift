@@ -97,4 +97,34 @@ struct LevelMeterTests {
         smoother.reset()
         #expect(smoother.update(with: -5.0) >= 0.0)
     }
+
+    @Test func normalizedLevelOfSilenceIsZero() {
+        #expect(LevelMeter.normalizedLevel(fromRMS: 0) == 0)
+    }
+
+    @Test func normalizedLevelOfFullScaleIsNearOne() {
+        let rms = LevelMeter.rms(makeBuffer(samples: sineWave(amplitude: 1.0)))
+        #expect(LevelMeter.normalizedLevel(fromRMS: rms) > 0.9)
+    }
+
+    /// The bug Jakob found on a real Mac (2026-09-24): `LevelMeterView`'s
+    /// thresholds (0.1/0.3/0.5/...) are on a 0...1 *normalized* scale, but
+    /// `pumpOnce()` used to feed them raw linear RMS straight from
+    /// `LevelMeter.rms` — normal conversational speech sits around -30 to
+    /// -15 dBFS, which is only ~0.03-0.18 in *linear* amplitude, so the
+    /// meter almost never crossed even the first threshold. This asserts
+    /// typical speech-level RMS now maps to something clearly above the
+    /// first couple of thresholds instead of near zero.
+    @Test func normalizedLevelOfTypicalSpeechCrossesMultipleThresholds() {
+        // -20 dBFS ≈ a comfortable conversational speaking level.
+        let speechRMS: Float = pow(10, -20.0 / 20.0)
+        let normalized = LevelMeter.normalizedLevel(fromRMS: speechRMS)
+        #expect(normalized > 0.5)
+    }
+
+    @Test func normalizedLevelIsMonotonicWithRMS() {
+        let quiet = LevelMeter.normalizedLevel(fromRMS: 0.01)
+        let loud = LevelMeter.normalizedLevel(fromRMS: 0.5)
+        #expect(loud > quiet)
+    }
 }

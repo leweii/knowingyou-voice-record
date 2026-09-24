@@ -210,8 +210,8 @@ actor RecordingSession {
             ? systemQueue.drain(count: Self.chunkSize)
             : [Float](repeating: 0, count: Self.chunkSize)
 
-        let micLevel = micLevelSmoother.update(with: LevelMeter.rms(micChunk))
-        let systemLevel = systemLevelSmoother.update(with: LevelMeter.rms(systemChunk))
+        let micLevel = micLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: LevelMeter.rms(micChunk)))
+        let systemLevel = systemLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: LevelMeter.rms(systemChunk)))
         eventContinuation.yield(.level(mic: micLevel, system: systemLevel))
 
         ticksSinceLastElapsedEvent += 1

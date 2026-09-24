@@ -35,14 +35,14 @@ struct NotesView: View {
                 .frame(height: 44)
 
             Text("纪要仅保存在本机")
-                .font(.system(size: 11))
+                .font(.system(size: 13))
                 .foregroundStyle(KYColor.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 14)
 
             TextField("会议标题", text: $title)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17))
+                .font(.system(size: 13))
                 .padding(.horizontal, 18)
                 .padding(.bottom, 12)
                 .onChange(of: title) { _, newValue in
