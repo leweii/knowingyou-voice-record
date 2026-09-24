@@ -45,7 +45,12 @@ struct LevelMeterView: View {
             }
         }
         .frame(height: maxHeight)
-        .animation(.easeOut(duration: 0.12), value: history)
+        // No easing here on purpose (see this file's decision record,
+        // 2026-09-24): a 0.12s ease-out on top of a 50ms update tick meant
+        // each bar was still animating toward its *previous* target when the
+        // next update arrived, which read as the meter lagging behind the
+        // actual sound rather than tracking it live. Snapping immediately
+        // makes the display match what RecordingSession just measured.
         .onChange(of: level) { _, newValue in
             history.removeFirst()
             history.append(newValue)

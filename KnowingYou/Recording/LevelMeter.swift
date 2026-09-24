@@ -53,11 +53,20 @@ enum LevelMeter {
     }
 }
 
-/// Fast attack / slow decay smoother for UI level meters (pill/notes-window
+/// Fast attack / fast-ish decay smoother for UI level meters (pill/notes-window
 /// level bars). Output is clamped to 0...1.
+///
+/// Decay was originally 0.15 (~215ms to fall halfway from a peak), which —
+/// stacked with the 5-bar rolling history in `LevelMeterView` and that
+/// view's own (now-removed) 0.12s ease-out animation — made the whole meter
+/// visibly lag behind what was actually being said (Jakob, 2026-09-24:
+/// "波形图的波动不够实时"). Raised to 0.45 (~65ms half-fall) so the display
+/// tracks the current sound rather than smoothing it into mush; still lower
+/// than attack so a sudden loud sound still visibly "hits" before trailing
+/// off, rather than looking identical rising and falling.
 struct LevelSmoother {
-    var attackCoefficient: Float = 0.6
-    var decayCoefficient: Float = 0.15
+    var attackCoefficient: Float = 0.75
+    var decayCoefficient: Float = 0.45
     private(set) var value: Float = 0
 
     @discardableResult
