@@ -119,6 +119,19 @@ final class FloatingWidgetPanel {
         isExpanded = true
         panel.becomesKeyOnlyIfNeeded = true
         panel.contentView?.isHidden = true
+        // The pill needs this to be draggable by its background (it's one
+        // small borderless blob with no title bar). The notes window has
+        // large borderless text-input areas (title field, body) with no
+        // visible bounds of their own — leaving this on meant a click meant
+        // for "focus this text field" could be read as "drag the window"
+        // instead, since AppKit treats an unclaimed mouseDown on window
+        // background as a move gesture when this is true. That's the most
+        // likely explanation for Jakob's "点击编辑没反应" report (2026-09-24
+        // follow-up) surviving the `makeKey()` fix below: the window could
+        // already accept keystrokes (paste worked), but clicks into the
+        // SwiftUI-hosted fields weren't reliably reaching them as a focus
+        // request. Turned off for the notes state; `collapse()` restores it.
+        panel.isMovableByWindowBackground = false
         panel.styleMask.insert(.resizable)
         panel.minSize = Self.notesMinSize
         panel.maxSize = Self.notesMaxSize
@@ -149,6 +162,7 @@ final class FloatingWidgetPanel {
         isExpanded = false
         panel.resignKey()
         panel.contentView?.isHidden = true
+        panel.isMovableByWindowBackground = true // restored — see expand()
         // Only the notes state is user-resizable — the pill is a fixed-size
         // status widget, not a window someone would want to drag-resize.
         panel.styleMask.remove(.resizable)
