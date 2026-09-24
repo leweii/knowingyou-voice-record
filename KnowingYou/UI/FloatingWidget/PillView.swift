@@ -13,7 +13,11 @@ struct PillView: View {
     var body: some View {
         ZStack {
             Button(action: onExpand) {
-                KYBrand.logo(size: 34)
+                // 02-ui-spec.md §9 (W1) called for ~34pt, but Jakob found
+                // that way too large against the placeholder SF Symbol logo
+                // on a real Mac (2026-09-24) and asked for at least a 3x
+                // reduction — see S15's decision record.
+                KYBrand.logo(size: 11)
                     .foregroundStyle(KYColor.textPrimary)
             }
             .buttonStyle(.plain)
