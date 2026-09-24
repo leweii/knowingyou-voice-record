@@ -38,7 +38,14 @@ final class FloatingWidgetPanel {
     /// User-draggable bounds for the notes window (Jakob's real-Mac feedback,
     /// 2026-09-24: "窗口大小需要可调整"). The pill never gets `.resizable` —
     /// only the expanded notes state does, toggled in `expand()`/`collapse()`.
-    private static let notesMinSize = CGSize(width: 340, height: 300)
+    /// The original 340×300 let the window shrink smaller than its own fixed
+    /// content actually needs — the toolbar alone (5×56pt buttons + spacing +
+    /// padding) has an intrinsic minimum width around 410pt, and the fixed
+    /// header/disclaimer/title/toolbar rows plus a usable amount of editor
+    /// space need more than 300pt of height — so at the old minimum, content
+    /// visibly overlapped/clipped (Jakob found this at min height, 2026-09-24
+    /// follow-up). Raised to comfortably clear both.
+    private static let notesMinSize = CGSize(width: 420, height: 360)
     private static let notesMaxSize = CGSize(width: 900, height: 800)
 
     /// Deliberately not constructed here — see S15's decision record:

@@ -58,6 +58,14 @@ struct NotesView: View {
             editorArea
                 .padding(.horizontal, 18)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Defensive: NotesEditor wraps a real NSScrollView/NSTextView
+                // (NSViewRepresentable), which has previously been observed
+                // to visually paint outside whatever space SwiftUI allocated
+                // it — see this file's decision record. `.clipped()` makes
+                // that a hard clip instead of relying on layout math alone
+                // (doubly relevant now that the window is resizable and can
+                // be squeezed toward its minimum size).
+                .clipped()
 
             NotesToolbar(
                 isPaused: isPaused,
