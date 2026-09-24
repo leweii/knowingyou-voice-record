@@ -13,7 +13,7 @@ struct NotesEditor: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let textView = NSTextView()
         textView.delegate = context.coordinator
-        textView.font = .systemFont(ofSize: 13)
+        textView.font = .systemFont(ofSize: 14)
         textView.textColor = NSColor(KYColor.textPrimary)
         textView.isRichText = false
         textView.drawsBackground = false

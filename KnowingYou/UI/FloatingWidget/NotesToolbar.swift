@@ -1,8 +1,13 @@
 import SwiftUI
 
 /// E7–E12 (02-ui-spec.md §10): pause/stop/level+timer/mark/screenshot, each
-/// a 56×44 rounded-8 button positioned at an exact x-range within the
-/// toolbar strip (y 320–365).
+/// a 56×44 rounded-8 button. Uses a flexible `HStack`+`Spacer` layout rather
+/// than the original spec's window-absolute `.position()` x-ranges, since
+/// the notes window is now user-resizable (2026-09-24, Jakob's real-Mac
+/// feedback) — pause/stop stay grouped on the left, flag/crop stay grouped
+/// on the right, and the level+timer group is centered in the space between
+/// them by two equal `Spacer()`s, which keeps both gaps equal automatically
+/// at any window width instead of needing a hand-picked center coordinate.
 struct NotesToolbar: View {
     let isPaused: Bool
     let micLevel: Float
@@ -12,17 +17,9 @@ struct NotesToolbar: View {
     var onMark: () -> Void
     var onScreenshot: () -> Void
 
-    /// Relative to this view's own `.frame(height: 44)` — not the absolute
-    /// window-space y=342.5 from 02-ui-spec.md §10's table (that coordinate
-    /// only made sense back when this view's positioned elements shared the
-    /// whole 418×380 window's coordinate space; see `NotesView`'s decision
-    /// record for why that approach was abandoned).
-    private static let toolbarCenterY: CGFloat = 22
-
     var body: some View {
-        ZStack {
+        HStack(spacing: 10) {
             OutlinedToolbarButton(systemImage: isPaused ? "play.fill" : "pause", action: onTogglePause)
-                .position(x: 45, y: Self.toolbarCenterY)
 
             Button(action: onStop) {
                 RoundedRectangle(cornerRadius: 8)
@@ -35,29 +32,23 @@ struct NotesToolbar: View {
                     }
             }
             .buttonStyle(.plain)
-            .position(x: 110, y: Self.toolbarCenterY)
+
+            Spacer(minLength: 12)
 
             HStack(spacing: 8) {
                 LevelMeterView(level: micLevel, segmentWidth: 3, segmentSpacing: 2.5, minHeight: 3, maxHeight: 12)
                 Text(Self.elapsedString(displayedElapsed))
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundStyle(KYColor.textPrimary)
                     .monospacedDigit()
             }
-            // Centered at the midpoint between the stop button's right edge
-            // (110+28=138) and the flag button's left edge (306-28=278) —
-            // 208, not the old 240 — so the gap from the level meter to the
-            // stop button equals the gap from the timer to the flag button
-            // regardless of how wide the timer text is (Jakob found these
-            // two gaps visibly unequal on a real Mac, 2026-09-24).
-            .position(x: 208, y: Self.toolbarCenterY)
+
+            Spacer(minLength: 12)
 
             OutlinedToolbarButton(systemImage: "flag", action: onMark)
-                .position(x: 306, y: Self.toolbarCenterY)
-
             OutlinedToolbarButton(systemImage: "crop", action: onScreenshot)
-                .position(x: 372, y: Self.toolbarCenterY)
         }
+        .padding(.horizontal, 16)
         .frame(height: 44)
     }
 

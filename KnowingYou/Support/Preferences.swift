@@ -25,6 +25,7 @@ final class Preferences {
         case hasCompletedOnboarding
         case floatingWidgetOrigin
         case recentRecordingsExpanded
+        case notesWindowSize
     }
 
     private let defaults: UserDefaults
@@ -187,6 +188,26 @@ final class Preferences {
                 return
             }
             defaults.set(try? JSONEncoder().encode(newValue), forKey: Key.floatingWidgetOrigin.rawValue)
+        }
+    }
+
+    /// Remembers the notes-window size across expand/collapse and app
+    /// relaunches, now that it's user-resizable (2026-09-24, Jakob's real-Mac
+    /// feedback) — `nil` means "use `NotesView.size`'s default".
+    var notesWindowSize: CGSize? {
+        get {
+            guard let data = defaults.data(forKey: Key.notesWindowSize.rawValue),
+                  let size = try? JSONDecoder().decode(CGSize.self, from: data) else {
+                return nil
+            }
+            return size
+        }
+        set {
+            guard let newValue else {
+                defaults.removeObject(forKey: Key.notesWindowSize.rawValue)
+                return
+            }
+            defaults.set(try? JSONEncoder().encode(newValue), forKey: Key.notesWindowSize.rawValue)
         }
     }
 }

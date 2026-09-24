@@ -1,16 +1,22 @@
 import AppKit
 import SwiftUI
 
-/// The expanded 418×380 notes-window state (02-ui-spec.md §10, E1-E12).
-/// The header icons (E1-E3) use the spec's absolute `.position()`
-/// coordinates like `PillView` does; the title/editor/toolbar are a plain
-/// top-to-bottom `VStack` instead — mixing an NSViewRepresentable-backed
-/// text editor into an absolutely-positioned `ZStack` alongside sibling
-/// SwiftUI views caused the editor's `NSScrollView` to visually paint over
-/// everything below it regardless of declared z-order or `.clipped()` (see
-/// this spec's decision record); a normal top-down layout sidesteps that
-/// entirely since nothing overlaps.
+/// The expanded notes-window state (02-ui-spec.md §10, E1-E12), default size
+/// 418×380 but now user-resizable (2026-09-24, Jakob's real-Mac feedback:
+/// "窗口大小需要可调整") — see `FloatingWidgetPanel`'s decision record. Since
+/// the window's width is no longer fixed, the header (E1-E3) and toolbar use
+/// flexible `HStack`+`Spacer` layouts instead of the original spec's
+/// window-absolute `.position()` coordinates, so the logo/menu/collapse
+/// icons stay pinned to their respective edges and the toolbar's button
+/// groups stay evenly spaced at any window width. The title/editor/toolbar
+/// were already a plain top-to-bottom `VStack` (mixing an
+/// `NSViewRepresentable`-backed text editor into an absolutely-positioned
+/// `ZStack` alongside sibling SwiftUI views caused the editor's
+/// `NSScrollView` to visually paint over everything below it regardless of
+/// declared z-order or `.clipped()` — see this spec's decision record); a
+/// normal top-down layout sidesteps that entirely since nothing overlaps.
 struct NotesView: View {
+    /// Default/initial size only — the window is resizable, see above.
     static let size = CGSize(width: 418, height: 380)
 
     let notesStore: NotesStore
@@ -35,14 +41,14 @@ struct NotesView: View {
                 .frame(height: 44)
 
             Text("纪要仅保存在本机")
-                .font(.system(size: 13))
+                .font(.system(size: 14))
                 .foregroundStyle(KYColor.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 14)
 
             TextField("会议标题", text: $title)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(.system(size: 14))
                 .padding(.horizontal, 18)
                 .padding(.bottom, 12)
                 .onChange(of: title) { _, newValue in
@@ -64,16 +70,17 @@ struct NotesView: View {
             )
             .frame(height: 60)
         }
-        .frame(width: Self.size.width, height: Self.size.height)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(KYColor.bgWindow)
         .onAppear { title = notesStore.document.title ?? "" }
     }
 
     private var header: some View {
-        ZStack {
+        HStack(spacing: 12) {
             KYBrand.logo(size: 22)
                 .foregroundStyle(KYColor.textPrimary)
-                .position(x: 28, y: 22)
+
+            Spacer(minLength: 0)
 
             Menu {
                 Button("在 Finder 中显示", action: onRevealInFinder)
@@ -87,7 +94,6 @@ struct NotesView: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .position(x: 355, y: 22)
 
             Button(action: onCollapse) {
                 Image(systemName: "arrow.down.right.and.arrow.up.left")
@@ -95,15 +101,15 @@ struct NotesView: View {
                     .foregroundStyle(KYColor.textSecondary)
             }
             .buttonStyle(.plain)
-            .position(x: 394, y: 22)
         }
+        .padding(.horizontal, 18)
     }
 
     private var editorArea: some View {
         ZStack(alignment: .topLeading) {
             if isEditorEmpty {
                 (Text(Image(systemName: "pencil.line")) + Text("  随手记下你的灵感和重点"))
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundStyle(KYColor.textPlaceholder)
                     .allowsHitTesting(false)
             }
@@ -124,4 +130,5 @@ struct NotesView: View {
         micLevel: 0.4,
         displayedElapsed: 25
     )
+    .frame(width: NotesView.size.width, height: NotesView.size.height)
 }

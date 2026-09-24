@@ -42,6 +42,20 @@ struct PreferencesTests {
         #expect(prefs.floatingWidgetOrigin == nil)
     }
 
+    @Test func notesWindowSizeDefaultsToNil() {
+        let prefs = makePreferences()
+        #expect(prefs.notesWindowSize == nil)
+    }
+
+    @Test func notesWindowSizeRoundTripsAndCanBeCleared() {
+        let prefs = makePreferences()
+        prefs.notesWindowSize = CGSize(width: 500, height: 420)
+        #expect(prefs.notesWindowSize == CGSize(width: 500, height: 420))
+
+        prefs.notesWindowSize = nil
+        #expect(prefs.notesWindowSize == nil)
+    }
+
     @Test func saveDirectoryPathDefaultsByLanguage() {
         let prefs = makePreferences()
         prefs.appLanguage = .zhHans

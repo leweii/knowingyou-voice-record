@@ -2,11 +2,17 @@ import AppKit
 import SwiftUI
 
 /// The floating widget (02-ui-spec.md §9/§10, plan §5.4): a single
-/// `.nonactivatingPanel` that animates between a 70×270 pill and a 418×380
-/// notes window, anchored so its top-right corner never moves. Never steals
-/// focus from a meeting app: `orderFrontRegardless()`, never
-/// `makeKeyAndOrderFront`, and `becomesKeyOnlyIfNeeded` in the notes state
-/// so it only becomes key once the user actually clicks into the text area.
+/// `.nonactivatingPanel` that animates between a fixed-size 44×175 pill and
+/// a notes window (default 418×380, now user-resizable within
+/// `notesMinSize`...`notesMaxSize` — Jakob's real-Mac feedback, 2026-09-24),
+/// anchored so its top-right corner never moves *during the expand/collapse
+/// animation*. A live user drag-resize of the notes window can move any
+/// edge, same as an ordinary resizable window — the anchor guarantee is only
+/// about the programmatic pill⇄notes transition, not manual resizing (see
+/// this spec's decision record). Never steals focus from a meeting app:
+/// `orderFrontRegardless()`, never `makeKeyAndOrderFront`, and
+/// `becomesKeyOnlyIfNeeded` in the notes state so it only becomes key once
+/// the user actually clicks into the text area.
 @MainActor
 final class FloatingWidgetPanel {
     static let shared = FloatingWidgetPanel()
@@ -27,6 +33,13 @@ final class FloatingWidgetPanel {
     private var currentIsPaused = false
     private var currentDisplayedElapsed: TimeInterval = 0
     private var moveObserver: NSObjectProtocol?
+    private var resizeObserver: NSObjectProtocol?
+
+    /// User-draggable bounds for the notes window (Jakob's real-Mac feedback,
+    /// 2026-09-24: "窗口大小需要可调整"). The pill never gets `.resizable` —
+    /// only the expanded notes state does, toggled in `expand()`/`collapse()`.
+    private static let notesMinSize = CGSize(width: 340, height: 300)
+    private static let notesMaxSize = CGSize(width: 900, height: 800)
 
     /// Deliberately not constructed here — see S15's decision record:
     /// building an `NSPanel` at app-launch time crashed under the `xctest`
@@ -99,8 +112,12 @@ final class FloatingWidgetPanel {
         isExpanded = true
         panel.becomesKeyOnlyIfNeeded = true
         panel.contentView?.isHidden = true
+        panel.styleMask.insert(.resizable)
+        panel.minSize = Self.notesMinSize
+        panel.maxSize = Self.notesMaxSize
         rebuildContent() // renders NotesView while still hidden — no jitter
-        applyFrame(for: NotesView.size, panel: panel, display: true) { [weak panel] in
+        let targetSize = Preferences.shared.notesWindowSize ?? NotesView.size
+        applyFrame(for: targetSize, panel: panel, display: true) { [weak panel] in
             panel?.contentView?.isHidden = false
         }
     }
@@ -110,6 +127,9 @@ final class FloatingWidgetPanel {
         isExpanded = false
         panel.resignKey()
         panel.contentView?.isHidden = true
+        // Only the notes state is user-resizable — the pill is a fixed-size
+        // status widget, not a window someone would want to drag-resize.
+        panel.styleMask.remove(.resizable)
         rebuildContent() // renders PillView while still hidden — no jitter
         applyFrame(for: PillView.size, panel: panel, display: true) { [weak panel] in
             panel?.contentView?.isHidden = false
@@ -166,6 +186,14 @@ final class FloatingWidgetPanel {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in self?.persistOriginIfOnScreen() }
+        }
+
+        resizeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didEndLiveResizeNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.persistNotesWindowSizeIfExpanded() }
         }
 
         self.panel = panel
@@ -248,6 +276,15 @@ final class FloatingWidgetPanel {
         let origin = panel.frame.origin
         guard isOnScreen(origin, size: PillView.size) else { return }
         Preferences.shared.floatingWidgetOrigin = origin
+    }
+
+    /// `didEndLiveResizeNotification` also fires for the pill (nothing
+    /// resizes it, but the notification is scoped to `object: panel` so it's
+    /// harmless either way) — `isExpanded` gates so only a real user drag of
+    /// the notes window persists a size.
+    private func persistNotesWindowSizeIfExpanded() {
+        guard let panel, isExpanded else { return }
+        Preferences.shared.notesWindowSize = panel.frame.size
     }
 }
 
