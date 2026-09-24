@@ -19,12 +19,12 @@ struct PillView: View {
     var body: some View {
         VStack(spacing: 14) {
             Button(action: onExpand) {
-                // 11pt (from the earlier "shrink it 3x" pass) turned out too
-                // faint once the whole pill itself got smaller too — bumped
-                // to 16pt, matching the icon size used everywhere else in
-                // the app (popover header, disclosure rows, etc.), still far
-                // below the original spec's 34pt.
-                KYBrand.logo(size: 16)
+                // 34pt (spec) -> 11pt ("shrink it 3x") -> 16pt (still looked
+                // faint) -> 22pt: matches the logo size NotesView's header
+                // uses in the expanded state, so the pill and the notes
+                // window now show the same-size brand mark instead of a
+                // third one-off value.
+                KYBrand.logo(size: 22)
                     .foregroundStyle(KYColor.textPrimary)
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
