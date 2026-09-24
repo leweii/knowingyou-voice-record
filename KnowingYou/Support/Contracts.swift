@@ -81,6 +81,11 @@ struct NoteEntry: Sendable, Equatable, Codable, Identifiable {
         case mark
         case screenshot
         case event
+        /// An image pasted directly into the notes editor (2026-09-24,
+        /// Jakob's real-Mac feedback) — distinct from `.screenshot` (which is
+        /// always a `ScreenshotMarker` capture of the meeting app's window)
+        /// even though both render/parse identically as `![[path]]`.
+        case pastedImage
     }
 
     let id: UUID

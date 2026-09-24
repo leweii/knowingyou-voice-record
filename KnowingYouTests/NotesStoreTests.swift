@@ -46,6 +46,26 @@ struct NotesStoreTests {
         }
     }
 
+    /// Pasted images (2026-09-24) reuse `addScreenshot`'s pattern but with
+    /// their own `NoteEntry.Kind` — this confirms the entry actually lands
+    /// with the right kind/text and that `info` (what `NotesEditor` needs to
+    /// compute the save path) is exposed correctly.
+    @Test func pastedImageProducesAnEntryWithTheGivenPathAndKind() async throws {
+        try await Self.withTempDirectory { directory in
+            let info = Self.makeInfo(in: directory)
+            let store = NotesStore(info: info)
+            #expect(store.info.assetsDir == info.assetsDir)
+
+            let path = "\(info.baseName)/粘贴 10-00-00.png"
+            store.addPastedImage(path: path, at: .now)
+            try await store.finish(endedAt: .now)
+
+            let text = try String(contentsOf: info.notesURL, encoding: .utf8)
+            #expect(text.contains("[图片]"))
+            #expect(text.contains("![[\(path)]]"))
+        }
+    }
+
     @Test func burstOfEditsWritesAtMostOnceWithinTheDebounceWindow() async throws {
         try await Self.withTempDirectory { directory in
             let info = Self.makeInfo(in: directory)

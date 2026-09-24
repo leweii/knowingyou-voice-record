@@ -126,6 +126,21 @@ final class FloatingWidgetPanel {
         let targetSize = Preferences.shared.notesWindowSize ?? NotesView.size
         applyFrame(for: targetSize, panel: panel, display: true) { [weak panel] in
             panel?.contentView?.isHidden = false
+            // Jakob reported (2026-09-24) that clicking into the title field
+            // or editor produced no typed text at all. `becomesKeyOnlyIfNeeded`
+            // is supposed to let a click alone promote the panel to key
+            // without this call, but that promotion is triggered by
+            // AppKit's own `-mouseDown:` handling on the clicked view —
+            // a SwiftUI `TextField` hosted via `NSHostingView` may not
+            // reliably trigger it the same way a plain `NSTextField` would.
+            // Making the panel key as soon as it finishes expanding removes
+            // that dependency entirely: `-makeKey()` (unlike
+            // `-makeKeyAndOrderFront:`) does not activate the app or steal
+            // focus from whatever the user was doing, which is the whole
+            // point of `.nonactivatingPanel` — it only makes *this* panel
+            // able to receive keystrokes once something inside it is
+            // clicked or focused.
+            panel?.makeKey()
         }
     }
 

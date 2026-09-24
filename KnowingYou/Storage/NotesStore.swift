@@ -10,6 +10,12 @@ final class NotesStore {
     private(set) var document: NotesDocument
     private let markdownURL: URL
 
+    /// Kept around (not just the `notesURL` extracted into `markdownURL`) so
+    /// pasted-image handling (`NotesEditor`, 2026-09-24) can compute the same
+    /// `<baseName>/<file>` asset path `ScreenshotMarker` uses, without a
+    /// second copy of that path-construction logic living outside this type.
+    let info: RecordingInfo
+
     /// Debounce window: a burst of edits within this window collapses into
     /// one write, timed from the *last* edit — not a fixed-tick poll. Var
     /// (not `let`) so tests can shrink it instead of waiting 3 real seconds.
@@ -22,6 +28,7 @@ final class NotesStore {
     private var autosaveTask: Task<Void, Never>?
 
     init(info: RecordingInfo) {
+        self.info = info
         self.markdownURL = info.notesURL
         self.document = NotesDocument(
             title: nil,
@@ -78,6 +85,18 @@ final class NotesStore {
     @discardableResult
     func addScreenshot(path: String, at wallClock: Date) -> NoteEntry.ID {
         let id = beginEntry(at: wallClock, kind: .screenshot)
+        updateEntry(id, text: path)
+        return id
+    }
+
+    /// `path` is already saved to disk by the caller (`NotesEditor`'s
+    /// paste handling) — same `<baseName>/<file>` convention as
+    /// `addScreenshot`, just a different trigger (paste vs. the toolbar
+    /// button) and a different `NoteEntry.Kind` so the two are distinguishable
+    /// on disk even though they render identically.
+    @discardableResult
+    func addPastedImage(path: String, at wallClock: Date) -> NoteEntry.ID {
+        let id = beginEntry(at: wallClock, kind: .pastedImage)
         updateEntry(id, text: path)
         return id
     }

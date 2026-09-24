@@ -59,13 +59,14 @@ enum NotesMarkdown {
         case .mark: heading += " · [标记]"
         case .screenshot: heading += " · [截图]"
         case .event: heading += " · [事件]"
+        case .pastedImage: heading += " · [图片]"
         }
         return heading
     }
 
     private static func renderBody(_ entry: NoteEntry) -> String? {
         switch entry.kind {
-        case .screenshot:
+        case .screenshot, .pastedImage:
             return entry.text.isEmpty ? nil : "![[\(entry.text)]]"
         case .note, .mark, .event:
             return entry.text.isEmpty ? nil : entry.text
@@ -157,6 +158,7 @@ enum NotesMarkdown {
             case "[标记]": kind = .mark
             case "[截图]": kind = .screenshot
             case "[事件]": kind = .event
+            case "[图片]": kind = .pastedImage
             default: break
             }
         }
@@ -165,7 +167,7 @@ enum NotesMarkdown {
         var text = ""
         if index < body.count, !body[index].isEmpty, !body[index].hasPrefix("## ") {
             text = body[index]
-            if kind == .screenshot, text.hasPrefix("![["), text.hasSuffix("]]") {
+            if (kind == .screenshot || kind == .pastedImage), text.hasPrefix("![["), text.hasSuffix("]]") {
                 text = String(text.dropFirst(3).dropLast(2))
             }
             index += 1

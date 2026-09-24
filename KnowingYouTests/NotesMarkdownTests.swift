@@ -109,7 +109,7 @@ struct NotesMarkdownTests {
     @Test func roundTripsTwentyRandomEntries() throws {
         var generator = SystemRandomNumberGenerator()
         let startedAt = Self.date(2026, 9, 23, 9, 0, 0)
-        let kinds: [NoteEntry.Kind] = [.note, .mark, .screenshot, .event]
+        let kinds: [NoteEntry.Kind] = [.note, .mark, .screenshot, .event, .pastedImage]
 
         var entries: [NoteEntry] = []
         for i in 0..<20 {

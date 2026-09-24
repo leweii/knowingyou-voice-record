@@ -40,16 +40,11 @@ struct NotesView: View {
             header
                 .frame(height: 44)
 
-            Text("纪要仅保存在本机")
-                .font(.system(size: 14))
-                .foregroundStyle(KYColor.textSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 14)
-
             TextField("会议标题", text: $title)
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))
                 .padding(.horizontal, 18)
+                .padding(.top, 14)
                 .padding(.bottom, 12)
                 .onChange(of: title) { _, newValue in
                     notesStore.setTitle(newValue)
