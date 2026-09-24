@@ -210,7 +210,8 @@ actor RecordingSession {
             ? systemQueue.drain(count: Self.chunkSize)
             : [Float](repeating: 0, count: Self.chunkSize)
 
-        let micLevel = micLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: LevelMeter.rms(micChunk)))
+        let rawMicRMS = LevelMeter.rms(micChunk)
+        let micLevel = micLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: rawMicRMS))
         let systemLevel = systemLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: LevelMeter.rms(systemChunk)))
         eventContinuation.yield(.level(mic: micLevel, system: systemLevel))
 
@@ -218,6 +219,21 @@ actor RecordingSession {
         if ticksSinceLastElapsedEvent >= 20, let startedAt { // ~once/second
             ticksSinceLastElapsedEvent = 0
             eventContinuation.yield(.elapsed(Date.now.timeIntervalSince(startedAt)))
+            // Jakob reported the pill's level meter never moves during a real
+            // recording even while talking (2026-09-24) — a code review of
+            // the whole level pipeline (RMS → dB normalization → smoother →
+            // .level event → FloatingWidgetPanel.updateLevel) didn't turn up
+            // a bug, and a direct-injection test of the UI half of that
+            // pipeline worked fine, but none of this can be checked against
+            // real microphone input in this environment (S07's decision
+            // record — mic TCC is misattributed to the host process here).
+            // This once-a-second log line is so the *next* real test gives
+            // an actual number instead of another guess: if `rawMicRMS`
+            // stays at 0.0 while he's talking, the bug is upstream in real
+            // capture (wrong/muted input device, permission not really
+            // active, etc.); if it's a small-but-nonzero number that never
+            // visibly moves the bars, the bug is in this mapping after all.
+            AppLog.recording.debug("level pipeline: rawMicRMS=\(rawMicRMS, privacy: .public) normalizedMicLevel=\(micLevel, privacy: .public)")
         }
 
         guard !isPaused else { return }
