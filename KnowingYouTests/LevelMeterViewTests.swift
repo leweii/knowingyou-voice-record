@@ -1,37 +1,39 @@
+import CoreGraphics
 import Testing
 @testable import KnowingYou
 
 struct LevelMeterViewTests {
-    @Test func silenceLightsNoSegments() {
-        #expect(LevelMeterView.litSegmentCount(for: 0) == 0)
+    @Test func silenceMapsToMinHeight() {
+        #expect(LevelMeterView.barHeight(for: 0, minHeight: 4, maxHeight: 16) == 4)
     }
 
-    @Test func fullScaleLightsAllFiveSegments() {
-        #expect(LevelMeterView.litSegmentCount(for: 1) == 5)
+    @Test func fullScaleMapsToMaxHeight() {
+        #expect(LevelMeterView.barHeight(for: 1, minHeight: 4, maxHeight: 16) == 16)
     }
 
-    @Test func eachThresholdLightsExactlyThatManySegments() {
-        #expect(LevelMeterView.litSegmentCount(for: 0.1) == 1)
-        #expect(LevelMeterView.litSegmentCount(for: 0.3) == 2)
-        #expect(LevelMeterView.litSegmentCount(for: 0.5) == 3)
-        #expect(LevelMeterView.litSegmentCount(for: 0.7) == 4)
-        #expect(LevelMeterView.litSegmentCount(for: 0.85) == 5)
+    @Test func midLevelMapsHalfwayBetweenMinAndMax() {
+        let height = LevelMeterView.barHeight(for: 0.5, minHeight: 4, maxHeight: 16)
+        #expect(abs(height - 10) < 0.001)
     }
 
-    @Test func justBelowAThresholdDoesNotLightThatSegment() {
-        #expect(LevelMeterView.litSegmentCount(for: 0.09) == 0)
-        #expect(LevelMeterView.litSegmentCount(for: 0.29) == 1)
-        #expect(LevelMeterView.litSegmentCount(for: 0.84) == 4)
-    }
-
-    @Test func segmentCountIsMonotonicallyNondecreasing() {
-        var previous = 0
+    @Test func heightIsMonotonicallyNondecreasingWithLevel() {
+        var previous: CGFloat = -1
         var level: Float = 0
         while level <= 1 {
-            let count = LevelMeterView.litSegmentCount(for: level)
-            #expect(count >= previous)
-            previous = count
+            let height = LevelMeterView.barHeight(for: level, minHeight: 4, maxHeight: 16)
+            #expect(height >= previous)
+            previous = height
             level += 0.05
         }
+    }
+
+    @Test func clampsOutOfRangeLevelToMinMax() {
+        #expect(LevelMeterView.barHeight(for: -5, minHeight: 4, maxHeight: 16) == 4)
+        #expect(LevelMeterView.barHeight(for: 5, minHeight: 4, maxHeight: 16) == 16)
+    }
+
+    @Test func respectsCustomMinAndMaxHeight() {
+        #expect(LevelMeterView.barHeight(for: 0, minHeight: 3, maxHeight: 12) == 3)
+        #expect(LevelMeterView.barHeight(for: 1, minHeight: 3, maxHeight: 12) == 12)
     }
 }
