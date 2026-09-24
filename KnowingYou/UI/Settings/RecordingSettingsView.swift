@@ -96,8 +96,8 @@ struct RecordingSettingsView: View {
             DisclosureRow(title: "支持在以下应用中识别会议", isExpanded: $isMeetingAppsExpanded)
             if isMeetingAppsExpanded {
                 VStack(spacing: 0) {
-                    ForEach($knownApps) { $app in
-                        MeetingAppRow(app: app, isEnabled: $app.isEnabled)
+                    ForEach(knownApps) { app in
+                        MeetingAppRow(app: app)
                     }
                     HStack {
                         Spacer()
@@ -125,7 +125,7 @@ struct RecordingSettingsView: View {
             let name = (bundle.infoDictionary?["CFBundleDisplayName"] as? String)
                 ?? (bundle.infoDictionary?["CFBundleName"] as? String)
                 ?? url.deletingPathExtension().lastPathComponent
-            knownApps.append(KnownApp(bundleIDPrefix: bundleID, displayNameKey: name, kind: .native, isEnabled: true))
+            knownApps.append(KnownApp(bundleIDPrefix: bundleID, displayNameKey: name, kind: .native))
         }
     }
 

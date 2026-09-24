@@ -29,17 +29,10 @@ struct KnownAppsTests {
 
     @Test func longestPrefixWins() {
         let apps = [
-            KnownApp(bundleIDPrefix: "com.tencent", displayNameKey: "腾讯（泛）", kind: .native, isEnabled: true),
-            KnownApp(bundleIDPrefix: "com.tencent.xinWeChat", displayNameKey: "微信", kind: .native, isEnabled: true),
+            KnownApp(bundleIDPrefix: "com.tencent", displayNameKey: "腾讯（泛）", kind: .native),
+            KnownApp(bundleIDPrefix: "com.tencent.xinWeChat", displayNameKey: "微信", kind: .native),
         ]
         let match = KnownApps.match(bundleID: "com.tencent.xinWeChat.helper", in: apps)
         #expect(match?.displayNameKey == "微信")
-    }
-
-    @Test func disabledAppsCanStillBeMatchedIfCallerPassesThemIn() {
-        // `match` itself is pure prefix matching; filtering by `isEnabled` is
-        // the caller's (MeetingDetector's) job, not this function's.
-        let disabled = KnownApp(bundleIDPrefix: "us.zoom.xos", displayNameKey: "Zoom", kind: .native, isEnabled: false)
-        #expect(KnownApps.match(bundleID: "us.zoom.xos", in: [disabled]) != nil)
     }
 }

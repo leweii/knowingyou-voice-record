@@ -87,19 +87,6 @@ struct MeetingDetectorTests {
         #expect(snapshot.first?.pids.sorted() == [1, 2])
     }
 
-    @Test func disabledAppsAreIgnored() async {
-        let reader = FakeProcessObjectReader()
-        let apps = KnownApps.defaults.map { app -> KnownApp in
-            var app = app
-            if app.bundleIDPrefix == "us.zoom.xos" { app.isEnabled = false }
-            return app
-        }
-        let detector = MeetingDetector(apps: { apps }, reader: reader)
-        reader.set([(pid: 1, bundleID: "us.zoom.xos")])
-        let snapshot = await detector.snapshot()
-        #expect(snapshot.isEmpty)
-    }
-
     @Test func unmatchedBundleIDsAreIgnored() async {
         let reader = FakeProcessObjectReader()
         let detector = MeetingDetector(apps: { KnownApps.defaults }, reader: reader)

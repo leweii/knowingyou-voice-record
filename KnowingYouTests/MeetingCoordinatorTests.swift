@@ -124,9 +124,9 @@ private final class FakeProcessObjectReader: ProcessObjectReading, @unchecked Se
     }
 }
 
-private let zoom = KnownApp(bundleIDPrefix: "us.zoom.xos", displayNameKey: "Zoom", kind: .native, isEnabled: true)
-private let chrome = KnownApp(bundleIDPrefix: "com.google.Chrome", displayNameKey: "Chrome", kind: .browser, isEnabled: true)
-private let feishu = KnownApp(bundleIDPrefix: "com.bytedance.lark", displayNameKey: "飞书", kind: .native, isEnabled: true)
+private let zoom = KnownApp(bundleIDPrefix: "us.zoom.xos", displayNameKey: "Zoom", kind: .native)
+private let chrome = KnownApp(bundleIDPrefix: "com.google.Chrome", displayNameKey: "Chrome", kind: .browser)
+private let feishu = KnownApp(bundleIDPrefix: "com.bytedance.lark", displayNameKey: "飞书", kind: .native)
 
 @MainActor
 private struct Harness {

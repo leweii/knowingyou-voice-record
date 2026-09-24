@@ -69,12 +69,14 @@ actor MeetingDetector {
 
     @discardableResult
     private func poll() async -> [ActiveMicUser] {
-        let enabledApps = await apps().filter(\.isEnabled)
+        // Every app in the list is always active — see 2026-09-24's decision
+        // record for why the old per-app enable/disable toggle was removed.
+        let knownApps = await apps()
         let processes = reader.activeInputProcesses()
 
         var grouped: [String: (app: KnownApp, pids: [pid_t], bundleIDs: [String])] = [:]
         for (pid, bundleID) in processes {
-            guard let match = KnownApps.match(bundleID: bundleID, in: enabledApps) else { continue }
+            guard let match = KnownApps.match(bundleID: bundleID, in: knownApps) else { continue }
             var entry = grouped[match.bundleIDPrefix] ?? (match, [], [])
             entry.pids.append(pid)
             entry.bundleIDs.append(bundleID)

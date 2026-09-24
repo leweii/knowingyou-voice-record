@@ -37,7 +37,6 @@ struct KnownApp: Sendable, Hashable, Codable, Identifiable {
     let bundleIDPrefix: String
     let displayNameKey: String
     let kind: Kind
-    var isEnabled: Bool
 
     enum Kind: String, Codable, Sendable {
         case native
