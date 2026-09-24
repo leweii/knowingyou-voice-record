@@ -1,52 +1,54 @@
 import SwiftUI
 
-/// The collapsed 70×270 floating-widget state (02-ui-spec.md §9, W1-W5).
-/// Positioned with explicit `.position()` coordinates rather than stacked
-/// spacing, so it matches the spec's element-center table exactly.
+/// The collapsed floating-widget state (originally 02-ui-spec.md §9's
+/// 70×270, W1-W5). Jakob found that footprint way too large a share of a
+/// real screen (2026-09-24) and asked for the whole widget shrunk, not just
+/// the logo — see this spec's decision record. Since the owner has overridden
+/// the spec's own pixel table, there's no longer a fixed reference coordinate
+/// set to hit exactly, so this uses a plain top-down `VStack` (per CLAUDE.md's
+/// general guidance) instead of the original `.position()`-per-element
+/// layout — resizing later just means changing spacing/padding, not
+/// recalculating five absolute coordinates by hand.
 struct PillView: View {
-    static let size = CGSize(width: 70, height: 270)
+    static let size = CGSize(width: 44, height: 175)
 
     let level: Float
     var onExpand: () -> Void = {}
     var onStop: () -> Void = {}
 
     var body: some View {
-        ZStack {
+        VStack(spacing: 14) {
             Button(action: onExpand) {
-                // 02-ui-spec.md §9 (W1) called for ~34pt, but Jakob found
-                // that way too large against the placeholder SF Symbol logo
-                // on a real Mac (2026-09-24) and asked for at least a 3x
-                // reduction — see S15's decision record.
                 KYBrand.logo(size: 11)
                     .foregroundStyle(KYColor.textPrimary)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .position(x: 35, y: 38)
 
-            LevelMeterView(level: level)
-                .position(x: 35, y: 101)
+            LevelMeterView(level: level, segmentWidth: 3, segmentSpacing: 2.5, minHeight: 3, maxHeight: 12)
 
             Rectangle()
                 .fill(KYColor.strokeHairline)
-                .frame(width: 50, height: 1)
-                .position(x: 35, y: 135)
+                .frame(width: 28, height: 1)
 
             Button(action: onStop) {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(KYColor.textPrimary)
-                    .frame(width: 24, height: 24)
+                    .frame(width: 18, height: 18)
             }
             .buttonStyle(.plain)
-            .position(x: 35, y: 171)
 
             Button(action: onExpand) {
                 Image(systemName: "pencil.line")
-                    .font(.system(size: 26))
+                    .font(.system(size: 14))
                     .foregroundStyle(KYColor.textPrimary)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .position(x: 35, y: 238)
         }
+        .padding(.vertical, 16)
         .frame(width: Self.size.width, height: Self.size.height)
         .background(KYColor.bgWindow)
     }
