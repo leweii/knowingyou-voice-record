@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func configureMeetingDetection() {
         Notifier.shared.registerCategories()
-        let detector = MeetingDetector(apps: { await MainActor.run { Preferences.shared.knownApps } })
+        let detector = MeetingDetector(apps: { await MainActor.run { KnownApps.merged(stored: Preferences.shared.knownApps) } })
         let coordinator = MeetingCoordinator(detector: detector, appState: appState)
         meetingCoordinator = coordinator
         Task { await coordinator.start() }

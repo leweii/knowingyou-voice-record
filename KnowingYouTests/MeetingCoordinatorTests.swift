@@ -288,7 +288,7 @@ struct MeetingCoordinatorTests {
         #expect(h.control.startCalls == ["Zoom"])
     }
 
-    @Test func ignoreThisMeetingSuppressesFurtherNotificationsForThatProcess() async {
+    @Test func promptsOnlyOncePerMeetingEvenAcrossAShortMicBlip() async {
         let h = Harness(autoRecord: false)
         await h.coordinator.start()
 
@@ -296,32 +296,67 @@ struct MeetingCoordinatorTests {
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))
         guard let signal = h.notifier.meetingDetectedSignals.last else {
-            Issue.record("expected a meetingDetected notification to have been sent")
+            Issue.record("expected a meetingDetected prompt to have been sent")
             return
         }
         #expect(h.notifier.meetingDetectedSignals.count == 1)
 
-        h.coordinator.userDidRespond(.ignoreThisMeeting, for: signal)
+        // User dismisses it (the ✕) — the same meeting must not prompt again.
+        h.coordinator.userDidRespond(.ignore, for: signal)
         await Task.yield()
 
         // Same process, still talking, detector re-emits (e.g. after a
-        // device-list churn) — must not notify again.
-        h.reader.set([(pid: 1, bundleID: "us.zoom.xos"), (pid: 99, bundleID: "us.zoom.xos")]) // still Zoom, different pid set
+        // device-list churn) — must not prompt again.
+        h.reader.set([(pid: 1, bundleID: "us.zoom.xos"), (pid: 99, bundleID: "us.zoom.xos")])
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))
-        #expect(h.notifier.meetingDetectedSignals.count == 1) // unchanged
+        #expect(h.notifier.meetingDetectedSignals.count == 1)
 
-        // Once the process actually disappears for a full 10s grace period
-        // (not just a brief blip — see `recordingSurvivesAnEightSecondGap`
-        // for why a short gap alone must NOT count as "gone") and a new one
-        // starts, it's a new meeting — notifications resume.
+        // A mic blip shorter than the 10s grace period is still the same
+        // meeting (Chrome releasing/re-grabbing the mic mid-call).
         h.reader.set([])
         await h.pushDetectorUpdate()
-        await h.advanceClock(.seconds(10))
+        await h.advanceClock(.seconds(5))
         h.reader.set([(pid: 2, bundleID: "us.zoom.xos")])
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))
+        #expect(h.notifier.meetingDetectedSignals.count == 1)
+
+        // Only once the process is really gone for the full 10s and a new
+        // one starts is it a new meeting — the prompt resumes.
+        h.reader.set([])
+        await h.pushDetectorUpdate()
+        await h.advanceClock(.seconds(10))
+        h.reader.set([(pid: 3, bundleID: "us.zoom.xos")])
+        await h.pushDetectorUpdate()
+        await h.advanceClock(.seconds(3))
         #expect(h.notifier.meetingDetectedSignals.count == 2)
+    }
+
+    @Test func stoppingARecordingStartedFromThePromptDoesNotPromptAgainDuringTheSameMeeting() async {
+        let h = Harness(autoRecord: false)
+        await h.coordinator.start()
+
+        h.reader.set([(pid: 1, bundleID: "us.zoom.xos")])
+        await h.pushDetectorUpdate()
+        await h.advanceClock(.seconds(3))
+        guard let signal = h.notifier.meetingDetectedSignals.last else {
+            Issue.record("expected a meetingDetected prompt to have been sent")
+            return
+        }
+        h.coordinator.userDidRespond(.startRecording, for: signal)
+        await Task.yield()
+        #expect(h.control.startCalls == ["Zoom"])
+
+        h.control.simulateUserInitiatedStop()
+        await Task.yield()
+
+        // Still in the same call: churn in the detector must not re-prompt.
+        h.reader.set([(pid: 1, bundleID: "us.zoom.xos"), (pid: 99, bundleID: "us.zoom.xos")])
+        await h.pushDetectorUpdate()
+        await h.advanceClock(.seconds(3))
+        #expect(h.notifier.meetingDetectedSignals.count == 1)
+        #expect(h.control.startCalls == ["Zoom"])
     }
 
     @Test func manualStopSuppressesAutoRecordWhileStillTalking() async {
@@ -343,10 +378,11 @@ struct MeetingCoordinatorTests {
         await h.advanceClock(.seconds(3))
         #expect(h.control.startCalls == ["Zoom"]) // unchanged: no second start call
 
-        // Only once the app actually disappears and a fresh session begins
-        // does the suppression clear.
+        // Only once the app has really disappeared (full 10s grace) and a
+        // fresh session begins does the suppression clear.
         h.reader.set([])
         await h.pushDetectorUpdate()
+        await h.advanceClock(.seconds(10))
         h.reader.set([(pid: 2, bundleID: "us.zoom.xos")])
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))

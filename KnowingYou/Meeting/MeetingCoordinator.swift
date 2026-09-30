@@ -2,7 +2,7 @@ import Foundation
 
 /// Turns `MeetingDetector.updates` into user-visible behavior: debounced
 /// entry into "meeting active," auto-record vs. ask-first, debounced auto-
-/// stop, and the "本次会议不再提示" / manual-override rules from plan §5.1.
+/// stop, and the once-per-meeting / manual-override rules from plan §5.1.
 @MainActor
 final class MeetingCoordinator {
     struct Timing: Sendable {
@@ -27,11 +27,15 @@ final class MeetingCoordinator {
     private var activationTasks: [String: Task<Void, Never>] = [:]
     private var deactivationTask: Task<Void, Never>?
 
-    /// bundleIDPrefix → "本次会议不再提示"; cleared once that process disappears.
-    private var silencedBundleIDs: Set<String> = []
-    /// bundleIDPrefix → user manually stopped a coordinator-started recording
-    /// while the app was still talking; cleared once that process disappears.
-    private var suppressedAutoRecordBundleIDs: Set<String> = []
+    /// bundleIDPrefix → this meeting has already been acted on once (an
+    /// auto-record started, or the "要开始录音吗？" prompt was shown). Whatever
+    /// the user does next — start, dismiss, or stop a recording manually —
+    /// the same meeting never prompts or auto-records again. Cleared only once
+    /// that app has stopped using the mic for a full `endAfter` grace period
+    /// (the same window that ends a meeting), so a brief mic blip mid-call
+    /// doesn't turn into a "new meeting" and a second prompt.
+    private var handledBundleIDs: Set<String> = []
+    private var handledClearTasks: [String: Task<Void, Never>] = [:]
 
     init(
         detector: MeetingDetector,
@@ -80,6 +84,8 @@ final class MeetingCoordinator {
         activationTasks.removeAll()
         deactivationTask?.cancel()
         deactivationTask = nil
+        for task in handledClearTasks.values { task.cancel() }
+        handledClearTasks.removeAll()
     }
 
     /// Routes a notification action tap (`Notifier.onAction`) back into the
@@ -91,10 +97,6 @@ final class MeetingCoordinator {
         case .startRecording:
             isCurrentlyRecording = true
             Task { await appState.startRecording(sourceApp: signal.app.displayNameKey, sourceBundleIDPrefix: signal.app.bundleIDPrefix) }
-        case .ignoreThisMeeting:
-            silencedBundleIDs.insert(signal.app.bundleIDPrefix)
-            currentSignal = nil
-            appState.setMeetingActive(nil)
         case .ignore:
             break
         }
@@ -137,11 +139,19 @@ final class MeetingCoordinator {
             deactivationTask = nil
         }
 
-        for key in Array(silencedBundleIDs) where !activeKeys.contains(key) {
-            silencedBundleIDs.remove(key)
-        }
-        for key in Array(suppressedAutoRecordBundleIDs) where !activeKeys.contains(key) {
-            suppressedAutoRecordBundleIDs.remove(key)
+        for key in Array(handledBundleIDs) {
+            if activeKeys.contains(key) {
+                handledClearTasks[key]?.cancel()
+                handledClearTasks[key] = nil
+            } else if handledClearTasks[key] == nil {
+                handledClearTasks[key] = Task { [weak self] in
+                    guard let self else { return }
+                    try? await self.clock.sleep(for: Self.duration(self.timing.endAfter))
+                    guard !Task.isCancelled else { return }
+                    self.handledBundleIDs.remove(key)
+                    self.handledClearTasks[key] = nil
+                }
+            }
         }
     }
 
@@ -150,18 +160,21 @@ final class MeetingCoordinator {
         let signal = MeetingSignal(app: user.app, pids: user.pids, since: .now)
         currentSignal = signal
 
-        let shouldAutoRecord = prefs.autoRecord
-            && user.app.kind == .native
-            && !suppressedAutoRecordBundleIDs.contains(user.app.bundleIDPrefix)
+        let key = user.app.bundleIDPrefix
+        guard !handledBundleIDs.contains(key) else {
+            // Same meeting we already prompted for / auto-recorded: only
+            // reflect it in the UI state, never prompt or record again.
+            appState.setMeetingActive(signal)
+            return
+        }
+        handledBundleIDs.insert(key)
 
-        if shouldAutoRecord {
+        if prefs.autoRecord && user.app.kind == .native {
             isCurrentlyRecording = true
             Task { await appState.startRecording(sourceApp: user.app.displayNameKey, sourceBundleIDPrefix: user.app.bundleIDPrefix) }
         } else {
             appState.setMeetingActive(signal)
-            if !silencedBundleIDs.contains(user.app.bundleIDPrefix) {
-                notifier.send(meetingDetected: signal)
-            }
+            notifier.send(meetingDetected: signal)
         }
     }
 
@@ -181,12 +194,11 @@ final class MeetingCoordinator {
     }
 
     /// The user pressed "停止录音" in the popover directly, bypassing us.
-    /// If that recording was one we auto-started, remember not to
-    /// immediately restart it while the same app is still talking
-    /// (scenario ⑨ in this spec's acceptance criteria).
+    /// The meeting is already in `handledBundleIDs`, so it won't prompt or
+    /// restart while the same app is still talking (scenario ⑨ in this
+    /// spec's acceptance criteria).
     private func handleUserInitiatedStop() {
-        guard let signal = currentSignal, isCurrentlyRecording else { return }
-        suppressedAutoRecordBundleIDs.insert(signal.app.bundleIDPrefix)
+        guard currentSignal != nil, isCurrentlyRecording else { return }
         currentSignal = nil
         isCurrentlyRecording = false
         deactivationTask?.cancel()

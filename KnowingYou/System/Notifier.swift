@@ -13,59 +13,33 @@ protocol MeetingNotifying: AnyObject {
     func send(meetingEnded appDisplayName: String)
 }
 
-/// Wraps `UNUserNotificationCenter`: registers the three category/action
-/// sets declared in S00 (`NotificationCategory`/`NotificationAction`), sends
-/// each of the three notification kinds `MeetingCoordinator`/`AppState` need,
-/// and routes action taps back via `onAction`.
+/// The app's user-facing prompts. "会议结束" is a system notification via
+/// `UNUserNotificationCenter`; "检测到会议" and "录音已保存" are persistent
+/// floating cards (`FloatingPromptPanel`), whose choices are routed back via
+/// `onAction`.
 @MainActor
 final class Notifier: NSObject, MeetingNotifying {
     static let shared = Notifier()
 
-    /// `MeetingCoordinator.start()` installs this to receive action taps on
-    /// `MEETING_DETECTED` notifications, keyed back to the `MeetingSignal`
-    /// that triggered them.
+    /// `MeetingCoordinator.start()` installs this to receive the user's choice
+    /// on the meeting-detected prompt, keyed back to the `MeetingSignal` that
+    /// triggered it.
     var onAction: ((NotificationAction, MeetingSignal) -> Void)?
 
-    private var pendingSignals: [String: MeetingSignal] = [:]
-    private var expiryTasks: [String: Task<Void, Never>] = [:]
-
     func registerCategories() {
-        let start = UNNotificationAction(identifier: NotificationAction.startRecording.rawValue, title: String(localized: "开始录音"), options: [.foreground])
-        let ignoreThisMeeting = UNNotificationAction(identifier: NotificationAction.ignoreThisMeeting.rawValue, title: String(localized: "本次会议不再提示"), options: [])
-        let ignore = UNNotificationAction(identifier: NotificationAction.ignore.rawValue, title: String(localized: "忽略"), options: [])
-
-        let meetingDetected = UNNotificationCategory(
-            identifier: NotificationCategory.meetingDetected.rawValue,
-            actions: [start, ignoreThisMeeting, ignore],
-            intentIdentifiers: [],
-            options: []
-        )
         let meetingEnded = UNNotificationCategory(identifier: NotificationCategory.meetingEnded.rawValue, actions: [], intentIdentifiers: [], options: [])
-        let recordingSaved = UNNotificationCategory(identifier: NotificationCategory.recordingSaved.rawValue, actions: [], intentIdentifiers: [], options: [])
 
-        UNUserNotificationCenter.current().setNotificationCategories([meetingDetected, meetingEnded, recordingSaved])
+        UNUserNotificationCenter.current().setNotificationCategories([meetingEnded])
         UNUserNotificationCenter.current().delegate = self
     }
 
+    /// Shown as a persistent floating card under the menu bar rather than a
+    /// system notification (which auto-dismisses and is easy to miss) — it
+    /// stays until the user picks an action or closes it.
     func send(meetingDetected signal: MeetingSignal) {
         guard Preferences.shared.notifyMeetingDetected else { return }
-        let id = "meeting-detected-\(signal.app.bundleIDPrefix)-\(signal.since.timeIntervalSince1970)"
-        pendingSignals[id] = signal
-
-        let content = UNMutableNotificationContent()
-        content.title = String(format: String(localized: "检测到%@开始使用麦克风"), signal.app.displayNameKey)
-        content.body = String(localized: "要开始录音吗？")
-        content.categoryIdentifier = NotificationCategory.meetingDetected.rawValue
-        content.userInfo = ["requestID": id]
-        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
-
-        expiryTasks[id]?.cancel()
-        expiryTasks[id] = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(20))
-            guard !Task.isCancelled else { return }
-            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [id])
-            self?.pendingSignals[id] = nil
-            self?.expiryTasks[id] = nil
+        FloatingPromptPanel.shared.showMeetingDetected(appName: signal.app.displayNameKey) { [weak self] action in
+            self?.onAction?(action, signal)
         }
     }
 
@@ -77,33 +51,11 @@ final class Notifier: NSObject, MeetingNotifying {
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 
+    /// Same persistent floating card as the meeting-detected prompt, with
+    /// "拷贝路径" / "打开文件夹" instead of a system notification.
     func send(recordingSaved audioURL: URL) {
         guard Preferences.shared.notifyRecordingSaved else { return }
-        let content = UNMutableNotificationContent()
-        content.title = String(localized: "录音已保存")
-        content.body = audioURL.lastPathComponent
-        content.categoryIdentifier = NotificationCategory.recordingSaved.rawValue
-        content.userInfo = ["audioPath": audioURL.path]
-        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
-    }
-
-    private func handleAction(identifier: String, requestID: String?) {
-        guard let requestID, let signal = pendingSignals[requestID] else { return }
-        let action: NotificationAction
-        switch identifier {
-        case NotificationAction.startRecording.rawValue, UNNotificationDefaultActionIdentifier:
-            action = .startRecording
-        case NotificationAction.ignoreThisMeeting.rawValue:
-            action = .ignoreThisMeeting
-        default:
-            action = .ignore
-        }
-        onAction?(action, signal)
-        pendingSignals[requestID] = nil
-    }
-
-    private func revealRecording(atPath path: String) {
-        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+        FloatingPromptPanel.shared.showRecordingSaved(audioURL: audioURL)
     }
 }
 
@@ -123,23 +75,7 @@ extension Notifier: UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let actionIdentifier = response.actionIdentifier
-        let userInfo = response.notification.request.content.userInfo
-        let requestID = userInfo["requestID"] as? String
-        let audioPath = userInfo["audioPath"] as? String
-
-        // Handling an action/reveal never needs to finish before telling the
-        // system "done" — call it immediately rather than threading it
-        // through the `Task`, which would require a non-Sendable closure to
-        // cross the actor boundary.
+        // The only remaining system notification ("会议已结束") has no actions.
         completionHandler()
-
-        Task { @MainActor [weak self] in
-            if let audioPath {
-                self?.revealRecording(atPath: audioPath)
-            } else if actionIdentifier != UNNotificationDismissActionIdentifier {
-                self?.handleAction(identifier: actionIdentifier, requestID: requestID)
-            }
-        }
     }
 }

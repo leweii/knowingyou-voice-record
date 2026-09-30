@@ -190,11 +190,34 @@ actor RecordingSession {
 
     private func startPumpLoop() {
         pumpTask = Task { [weak self] in
+            // Fixed deadlines rather than "sleep 50ms after each pass": that
+            // always runs slightly slower than the sources produce audio, so
+            // the queues grow without bound and the level meter (measured on
+            // the drained chunk) falls further behind the real sound the
+            // longer a recording runs (Jakob, 2026-09-30: "波形图不够实时").
+            let clock = ContinuousClock()
+            var next = clock.now
             while !Task.isCancelled {
                 guard let self else { return }
-                await self.pumpOnce()
-                try? await Task.sleep(for: .milliseconds(50))
+                await self.pumpCatchingUp()
+                next += .milliseconds(50)
+                if next < clock.now { next = clock.now } // stalled: resume the cadence, don't burst forever
+                try? await Task.sleep(until: next, tolerance: .zero, clock: clock)
             }
+        }
+    }
+
+    /// One regular pump, then extra passes while either queue is holding more
+    /// than ~100ms of audio, so any backlog (scheduling hiccup, clock drift
+    /// between the sources and this timer) is drained instead of becoming
+    /// permanent lag.
+    private func pumpCatchingUp() {
+        pumpOnce()
+        var extraPasses = 0
+        while extraPasses < 20,
+              max(micQueue.availableCount, systemQueue.availableCount) >= Self.chunkSize * 2 {
+            pumpOnce()
+            extraPasses += 1
         }
     }
 
@@ -363,6 +386,12 @@ private final class SourceSampleQueue: @unchecked Sendable {
         lock.lock()
         samples.append(contentsOf: mono)
         lock.unlock()
+    }
+
+    var availableCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return samples.count
     }
 
     /// Removes and returns up to `count` samples, zero-padding if fewer are

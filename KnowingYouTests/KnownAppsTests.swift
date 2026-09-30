@@ -36,6 +36,26 @@ struct KnownAppsTests {
         #expect(match?.displayNameKey == "微信")
     }
 
+    // MARK: - merged(stored:)
+
+    @Test func mergedAddsDefaultsMissingFromAStaleStoredList() {
+        // A list persisted before the browser entries existed.
+        let stale = KnownApps.defaults.filter { $0.kind == .native }
+        let merged = KnownApps.merged(stored: stale)
+        #expect(KnownApps.match(bundleID: "com.google.Chrome.helper", in: merged)?.kind == .browser)
+    }
+
+    @Test func mergedKeepsUserAddedAppsAndDoesNotDuplicateDefaults() {
+        let custom = KnownApp(bundleIDPrefix: "com.example.MyCall", displayNameKey: "MyCall", kind: .native)
+        let merged = KnownApps.merged(stored: KnownApps.defaults + [custom])
+        #expect(merged.count == KnownApps.defaults.count + 1)
+        #expect(merged.contains(custom))
+    }
+
+    @Test func mergedOfEmptyStoredIsDefaults() {
+        #expect(KnownApps.merged(stored: []) == KnownApps.defaults)
+    }
+
     // MARK: - looksLikeMeetingApp (2026-09-24 keyword-heuristic fallback)
 
     @Test func looksLikeMeetingAppMatchesKnownKeywords() {

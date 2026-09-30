@@ -32,6 +32,17 @@ enum KnownApps {
         KnownApp(bundleIDPrefix: "company.thebrowser.Browser", displayNameKey: "Arc", kind: .browser),
     ]
 
+    /// The list actually used for detection and shown in settings: the
+    /// built-in `defaults` plus anything the user added themselves. Persisted
+    /// lists are a snapshot from whenever they were first seeded, so relying
+    /// on them alone silently drops entries added to `defaults` later (e.g.
+    /// the browsers — Google Meet in Chrome was never detected because of it)
+    /// and yields an empty list if settings were never opened.
+    static func merged(stored: [KnownApp]) -> [KnownApp] {
+        let defaultPrefixes = Set(defaults.map(\.bundleIDPrefix))
+        return defaults + stored.filter { !defaultPrefixes.contains($0.bundleIDPrefix) }
+    }
+
     /// Longest-prefix match: a running process' bundle ID (e.g.
     /// `com.bytedance.lark.helper`, a Chromium/Electron helper process)
     /// matches a `KnownApp` if it equals the app's bundle ID or has it as a

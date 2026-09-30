@@ -144,7 +144,6 @@ enum NotificationCategory: String, Sendable {
 enum NotificationAction: String, Sendable {
     case startRecording = "START_RECORDING"
     case ignore = "IGNORE"
-    case ignoreThisMeeting = "IGNORE_THIS_MEETING"
 }
 
 // MARK: - Errors and permissions
