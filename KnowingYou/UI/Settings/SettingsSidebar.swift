@@ -69,6 +69,8 @@ private struct SidebarBottomCard: View {
                         Text(String(format: String(localized: "本地版 · v%@"), versionString))
                             .font(KYFont.small)
                             .foregroundStyle(KYColor.text2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                 }
                 Spacer(minLength: 0)

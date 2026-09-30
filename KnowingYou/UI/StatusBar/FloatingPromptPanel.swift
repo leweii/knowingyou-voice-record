@@ -218,8 +218,7 @@ struct MeetingPromptView: View {
                 Text(verbatim: String(format: String(localized: "检测到%@开始使用麦克风"), appName))
                     .font(KYFont.headline)
                     .foregroundStyle(KYColor.text)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .fixedSize(horizontal: false, vertical: true) // wrap fully; the card grows to fit
                 Text("要开始录音吗？")
                     .font(KYFont.caption)
                     .foregroundStyle(KYColor.text2)
@@ -233,7 +232,9 @@ struct MeetingPromptView: View {
                     onAction(.ignore)
                 }
             }
-            .frame(width: 108)
+            // Sized by the longest label (English "Start Recording" is much
+            // wider than "开始录音"), never truncated.
+            .fixedSize(horizontal: true, vertical: false)
         }
         .padding(16)
         .frame(width: 380)
