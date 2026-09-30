@@ -64,11 +64,15 @@ private struct MarkdownDocumentView: View {
     var body: some View {
         ScrollView {
             Text(attributed)
-                .font(.system(size: 13))
-                .foregroundStyle(KYColor.textPrimary)
+                .font(KYFont.body)
+                .lineSpacing(5)
+                .foregroundStyle(KYColor.text)
+                .tint(KYColor.accent)
+                .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(24)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 28)
         }
-        .background(KYColor.bgWindow)
+        .background(KYColor.surface)
     }
 }

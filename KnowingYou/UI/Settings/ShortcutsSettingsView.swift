@@ -7,33 +7,30 @@ struct ShortcutsSettingsView: View {
     @State private var hotkeysEnabled = Preferences.shared.hotkeysEnabled
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("快捷键")
-            VStack(spacing: 0) {
-                SettingsRow(title: "全局快捷键", subtitle: "开启后，知鱼录音在后台运行时依然有效") {
+        SettingsPageScaffold(title: "快捷键", lead: "点击组合键录制新快捷键；Esc 取消，⌫ 清除。") {
+            SettingsSection("全局快捷键") {
+                SettingsRow(title: "全局快捷键", subtitle: "开启后，知鱼录音在后台运行时依然有效", systemImage: "command") {
                     KYToggle(isOn: hotkeysEnabledBinding)
                 }
-                SettingsRow(title: "开始 / 停止录音") {
+            }
+            SettingsSection("操作") {
+                SettingsRow(title: "开始 / 停止录音", systemImage: "record.circle") {
                     ShortcutRecorderButton(name: .toggleRecording, isEnabled: hotkeysEnabled)
                 }
-                SettingsRow(title: "截屏标记", subtitle: "快速截取并保存会议中的画面") {
+                SettingsRow(title: "截屏标记", subtitle: "快速截取并保存会议中的画面", systemImage: "camera.viewfinder") {
                     ShortcutRecorderButton(name: .screenshotMark, isEnabled: hotkeysEnabled)
                 }
-                SettingsRow(title: "快速标记", subtitle: "实时标记重要时刻，便于后续回顾") {
+                SettingsRow(title: "快速标记", subtitle: "实时标记重要时刻，便于后续回顾", systemImage: "flag") {
                     ShortcutRecorderButton(name: .quickMark, isEnabled: hotkeysEnabled)
                 }
             }
-
             HStack {
                 Spacer()
-                OutlinedButton("恢复默认", height: 30) {
+                KYButton("恢复默认", style: .ghost, size: .small, systemImage: "arrow.counterclockwise") {
                     KeyboardShortcuts.reset(.toggleRecording, .quickMark, .screenshotMark)
                 }
             }
-            .padding(.top, 12)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 24)
     }
 
     private var hotkeysEnabledBinding: Binding<Bool> {
@@ -49,5 +46,5 @@ struct ShortcutsSettingsView: View {
 
 #Preview {
     ShortcutsSettingsView()
-        .frame(width: 496, height: 520)
+        .frame(width: 540, height: 580)
 }

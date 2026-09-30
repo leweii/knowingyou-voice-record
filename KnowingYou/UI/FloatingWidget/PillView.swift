@@ -1,65 +1,103 @@
 import SwiftUI
 
-/// The collapsed floating-widget state (originally 02-ui-spec.md §9's
-/// 70×270, W1-W5). Jakob found that footprint way too large a share of a
-/// real screen (2026-09-24) and asked for the whole widget shrunk, not just
-/// the logo — see this spec's decision record. Since the owner has overridden
-/// the spec's own pixel table, there's no longer a fixed reference coordinate
-/// set to hit exactly, so this uses a plain top-down `VStack` (per CLAUDE.md's
-/// general guidance) instead of the original `.position()`-per-element
-/// layout — resizing later just means changing spacing/padding, not
-/// recalculating five absolute coordinates by hand.
+/// The collapsed floating widget (S22, prototype §02): a horizontal
+/// "dynamic island" capsule — breathing dot · timer · live waveform · stop ·
+/// expand. Replaces the 44×175 vertical strip (which itself replaced the
+/// spec's 70×270 after Jakob found that too large, 2026-09-24); the capsule
+/// keeps a similarly small footprint while giving the timer and waveform
+/// room to read at a glance. The whole background drags the window
+/// (`isMovableByWindowBackground` is on in the pill state).
 struct PillView: View {
-    static let size = CGSize(width: 44, height: 175)
+    static let size = CGSize(width: 264, height: 48)
 
     let level: Float
+    let displayedElapsed: TimeInterval
+    let isPaused: Bool
     var onExpand: () -> Void = {}
     var onStop: () -> Void = {}
 
     var body: some View {
-        VStack(spacing: 14) {
-            Button(action: onExpand) {
-                // 34pt (spec) -> 11pt ("shrink it 3x") -> 16pt (still looked
-                // faint) -> 22pt: matches the logo size NotesView's header
-                // uses in the expanded state, so the pill and the notes
-                // window now show the same-size brand mark instead of a
-                // third one-off value.
-                KYBrand.logo(size: 22)
-                    .foregroundStyle(KYColor.textPrimary)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
+        HStack(spacing: 10) {
+            BreathingDot(color: isPaused ? KYColor.warn : KYColor.rec, size: 9, isBreathing: !isPaused)
+                .frame(width: 12)
+
+            Text(Self.elapsedString(displayedElapsed))
+                .font(KYFont.timer)
+                .foregroundStyle(isPaused ? KYColor.text2 : KYColor.text)
+                .contentTransition(.numericText())
+                .fixedSize()
+
+            WaveformView(
+                level: level,
+                barCount: 22,
+                barWidth: 2.5,
+                spacing: 2,
+                color: KYColor.accent,
+                isFrozen: isPaused,
+                fadesTail: true
+            )
+            .frame(height: 24)
+            .allowsHitTesting(false)
+
+            PillCircleButton(help: "停止并保存", tint: KYColor.rec, hoverInk: .white, action: onStop) {
+                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                    .frame(width: 11, height: 11)
             }
-            .buttonStyle(.plain)
 
-            LevelMeterView(level: level, segmentWidth: 3, segmentSpacing: 2.5, minHeight: 3, maxHeight: 12)
-
-            Rectangle()
-                .fill(KYColor.strokeHairline)
-                .frame(width: 28, height: 1)
-
-            Button(action: onStop) {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(KYColor.textPrimary)
-                    .frame(width: 18, height: 18)
+            PillCircleButton(help: "展开笔记", tint: KYColor.accent, hoverInk: KYColor.accentInk, action: onExpand) {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 12, weight: .semibold))
             }
-            .buttonStyle(.plain)
-
-            Button(action: onExpand) {
-                Image(systemName: "pencil.line")
-                    .font(.system(size: 14))
-                    .foregroundStyle(KYColor.textPrimary)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
         }
-        .padding(.vertical, 16)
+        .padding(.leading, 16)
+        .padding(.trailing, 8)
         .frame(width: Self.size.width, height: Self.size.height)
-        .background(KYColor.bgWindow)
+        .kyGlass(cornerRadius: Self.size.height / 2)
+    }
+
+    static func elapsedString(_ interval: TimeInterval) -> String {
+        let total = Int(interval.rounded())
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        let seconds = total % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+/// 32pt round button: neutral at rest, fills with `tint` and glows on hover.
+private struct PillCircleButton<Glyph: View>: View {
+    let help: LocalizedStringKey
+    let tint: Color
+    let hoverInk: Color
+    let action: () -> Void
+    @ViewBuilder let glyph: Glyph
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            glyph
+                .foregroundStyle(isHovering ? hoverInk : tint)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(isHovering ? tint : KYColor.surface3))
+                .shadow(color: isHovering ? tint.opacity(0.5) : .clear, radius: 8)
+                .scaleEffect(isHovering ? 1.06 : 1)
+                .contentShape(Circle())
+        }
+        .buttonStyle(PressSquashStyle())
+        .onHover { isHovering = $0 }
+        .kyAnimation(KYMotion.micro, value: isHovering)
+        .help(Text(help))
     }
 }
 
 #Preview {
-    PillView(level: 0.6)
-        .frame(width: PillView.size.width, height: PillView.size.height)
+    VStack(spacing: 16) {
+        PillView(level: 0.6, displayedElapsed: 754, isPaused: false)
+        PillView(level: 0.6, displayedElapsed: 754, isPaused: true)
+    }
+    .padding(30)
 }

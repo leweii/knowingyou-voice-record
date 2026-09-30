@@ -30,6 +30,9 @@ final class StatusBarController {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         configureButton()
         trackRecordingState()
+        FloatingPromptPanel.shared.anchorFrameProvider = { [weak self] in
+            self?.statusItem.button?.window?.frame
+        }
     }
 
     private func configureButton() {
@@ -80,36 +83,56 @@ final class StatusBarController {
     private func updateDot() {
         switch appState.phase {
         case .recording:
-            showDot(color: .systemRed)
+            showDot(color: NSColor(KYColor.rec), breathes: true)
         case .meetingActive:
-            showDot(color: .systemOrange)
+            showDot(color: NSColor(KYColor.warn), breathes: false)
         case .idle, .finalizing:
             hideDot()
         }
     }
 
-    private func showDot(color: NSColor) {
+    /// Red = recording (breathes, 1.6s like every other "live" dot in the
+    /// app); amber = meeting detected, not recording (steady — it's a
+    /// "look here" hint, not a live signal).
+    private func showDot(color: NSColor, breathes: Bool) {
         guard let button = statusItem.button, let layer = button.layer else { return }
+        let dot: CALayer
         if let dotLayer {
-            dotLayer.backgroundColor = color.cgColor
-            return
+            dot = dotLayer
+        } else {
+            let size: CGFloat = 7
+            dot = CALayer()
+            dot.frame = CGRect(x: button.bounds.width - size - 1, y: 1, width: size, height: size)
+            dot.cornerRadius = size / 2
+            dot.shadowOffset = .zero
+            dot.shadowRadius = 3
+            layer.addSublayer(dot)
+            dotLayer = dot
         }
-        let size: CGFloat = 6
-        let dot = CALayer()
-        dot.frame = CGRect(x: button.bounds.width - size - 2, y: 2, width: size, height: size)
-        dot.backgroundColor = color.cgColor
-        dot.cornerRadius = size / 2
-        layer.addSublayer(dot)
-
-        let breathe = CABasicAnimation(keyPath: "opacity")
-        breathe.fromValue = 1.0
-        breathe.toValue = 0.35
-        breathe.duration = 1.0
+        let resolved = color.usingColorSpace(.sRGB) ?? color
+        dot.backgroundColor = resolved.cgColor
+        dot.shadowColor = resolved.cgColor
+        dot.removeAnimation(forKey: "breathing")
+        dot.removeAnimation(forKey: "breathing-fade")
+        dot.opacity = 1
+        dot.shadowOpacity = 0.8
+        guard breathes, !KYMotion.reduceMotion else { return }
+        let breathe = CABasicAnimation(keyPath: "shadowOpacity")
+        breathe.fromValue = 0.9
+        breathe.toValue = 0.1
+        breathe.duration = KYMotion.breatheDuration / 2
         breathe.autoreverses = true
         breathe.repeatCount = .infinity
+        breathe.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        let fade = CABasicAnimation(keyPath: "opacity")
+        fade.fromValue = 1.0
+        fade.toValue = 0.55
+        fade.duration = KYMotion.breatheDuration / 2
+        fade.autoreverses = true
+        fade.repeatCount = .infinity
+        fade.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         dot.add(breathe, forKey: "breathing")
-
-        dotLayer = dot
+        dot.add(fade, forKey: "breathing-fade")
     }
 
     private func hideDot() {

@@ -1,30 +1,25 @@
 import SwiftUI
 
-/// The 通知 (Notifications) page: N1–N4. Rows are spaced 72pt apart here,
-/// looser than the 60pt pitch used on the other pages — an intentional
-/// difference called out in 02-ui-spec.md §6.
+/// The 通知 (Notifications) page.
 struct NotificationsSettingsView: View {
     @State private var notifyMeetingDetected = Preferences.shared.notifyMeetingDetected
     @State private var notifyMeetingEnded = Preferences.shared.notifyMeetingEnded
     @State private var notifyRecordingSaved = Preferences.shared.notifyRecordingSaved
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("通知")
-            VStack(spacing: 12) {
-                SettingsRow(title: "会议开始提醒", subtitle: "会议开始时，主动询问是否开始录音") {
+        SettingsPageScaffold(title: "通知", lead: "什么时候提醒你。") {
+            SettingsSection("通知") {
+                SettingsRow(title: "会议开始提醒", subtitle: "会议开始时，主动询问是否开始录音", systemImage: "bell.badge") {
                     KYToggle(isOn: notifyMeetingDetectedBinding)
                 }
-                SettingsRow(title: "会议结束提醒", subtitle: "检测到会议结束并自动停止录音时通知我") {
+                SettingsRow(title: "会议结束提醒", subtitle: "检测到会议结束并自动停止录音时通知我", systemImage: "stop.circle") {
                     KYToggle(isOn: notifyMeetingEndedBinding)
                 }
-                SettingsRow(title: "录音已保存提醒", subtitle: "录音文件写入完成后提醒我查看") {
+                SettingsRow(title: "录音已保存提醒", subtitle: "录音文件写入完成后提醒我查看", systemImage: "checkmark.circle") {
                     KYToggle(isOn: notifyRecordingSavedBinding)
                 }
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 24)
     }
 
     private var notifyMeetingDetectedBinding: Binding<Bool> {
@@ -60,5 +55,5 @@ struct NotificationsSettingsView: View {
 
 #Preview {
     NotificationsSettingsView()
-        .frame(width: 496, height: 520)
+        .frame(width: 540, height: 580)
 }

@@ -66,8 +66,8 @@ struct MarqueeText: View {
 #Preview {
     MarqueeText(
         text: "开始录音即代表你确认所有参会者均已获悉本次会议将被录音",
-        font: KYFont.popoverFooter,
-        color: KYColor.textSecondary
+        font: KYFont.small,
+        color: KYColor.text3
     )
     .frame(width: 200)
     .padding()

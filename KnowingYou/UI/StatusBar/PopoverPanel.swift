@@ -38,7 +38,7 @@ final class PopoverPanel {
         // before every stored property is set would fail definite-init
         // checking, even weakly. The real closures (which need `self.close()`)
         // are wired in below, once `self` is fully initialized.
-        hostingView = RoundedHostingView(rootView: PopoverView(appState: appState, onOpenSaveDirectory: {}, onOpenSettings: {}))
+        hostingView = RoundedHostingView(rootView: PopoverView(appState: appState, onOpenSaveDirectory: {}, onOpenSettings: {}), cornerRadius: 16)
         hostingView.frame = NSRect(origin: .zero, size: Self.baseSize)
         panel.contentView = hostingView
 
@@ -75,8 +75,23 @@ final class PopoverPanel {
     private func open() {
         resizeToFitContent()
         positionPanel()
+        animateIn()
         panel.orderFrontRegardless() // never makeKey: would steal focus from a meeting app in front
         startMonitoringOutsideInteraction()
+    }
+
+    /// Drops 8pt into place while fading in (prototype §01's pop-in).
+    private func animateIn() {
+        guard !KYMotion.reduceMotion else { return }
+        let final = panel.frame
+        panel.alphaValue = 0
+        panel.setFrameOrigin(NSPoint(x: final.origin.x, y: final.origin.y + 8))
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.28
+            context.timingFunction = KYMotion.windowMorphTiming
+            panel.animator().alphaValue = 1
+            panel.animator().setFrameOrigin(final.origin)
+        }
     }
 
     private func positionPanel() {

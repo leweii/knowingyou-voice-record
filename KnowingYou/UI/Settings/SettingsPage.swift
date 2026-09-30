@@ -25,7 +25,7 @@ enum SettingsPage: CaseIterable, Identifiable {
         switch self {
         case .general: "gearshape"
         case .recording: "waveform"
-        case .shortcuts: "keyboard"
+        case .shortcuts: "command"
         case .notifications: "bell"
         case .about: "info.circle"
         }

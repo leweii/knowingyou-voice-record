@@ -11,12 +11,32 @@
         }
       }
     },
+    "GitHub": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub"
+          }
+        }
+      }
+    },
     "中文（简体）": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Chinese (Simplified)"
+          }
+        }
+      }
+    },
+    "什么时候提醒你。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When to let you know."
           }
         }
       }
@@ -71,6 +91,16 @@
         }
       }
     },
+    "会议识别、自动录制与音频输出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting detection, auto-recording, and audio output."
+          }
+        }
+      }
+    },
     "使用帮助": {
       "localizations": {
         "en": {
@@ -97,6 +127,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preferences…"
+          }
+        }
+      }
+    },
+    "停止并保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop and Save"
           }
         }
       }
@@ -241,6 +281,16 @@
         }
       }
     },
+    "启动方式、界面语言与录音存放位置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startup, language, and where recordings are saved."
+          }
+        }
+      }
+    },
     "在 Dock 中显示图标": {
       "localizations": {
         "en": {
@@ -341,12 +391,52 @@
         }
       }
     },
+    "展开笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand Notes"
+          }
+        }
+      }
+    },
     "已停用": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Disabled"
+          }
+        }
+      }
+    },
+    "已拷贝": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        }
+      }
+    },
+    "已授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Granted"
+          }
+        }
+      }
+    },
+    "已暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
           }
         }
       }
@@ -441,6 +531,16 @@
         }
       }
     },
+    "录制会议对方的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Records the other participants' audio"
+          }
+        }
+      }
+    },
     "录音": {
       "localizations": {
         "en": {
@@ -531,6 +631,16 @@
         }
       }
     },
+    "待命中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standing by"
+          }
+        }
+      }
+    },
     "快捷键": {
       "localizations": {
         "en": {
@@ -601,12 +711,42 @@
         }
       }
     },
+    "截屏标记 ⌥⌘S": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot Mark ⌥⌘S"
+          }
+        }
+      }
+    },
     "打开": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Open"
+          }
+        }
+      }
+    },
+    "打开录音文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Recordings Folder"
+          }
+        }
+      }
+    },
+    "打开文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Folder"
           }
         }
       }
@@ -621,6 +761,16 @@
         }
       }
     },
+    "拷贝路径": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Path"
+          }
+        }
+      }
+    },
     "按下快捷键…": {
       "localizations": {
         "en": {
@@ -631,12 +781,32 @@
         }
       }
     },
+    "操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions"
+          }
+        }
+      }
+    },
     "支持在以下应用中识别会议": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Detect meetings in the following apps"
+          }
+        }
+      }
+    },
+    "收起": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse"
           }
         }
       }
@@ -681,6 +851,16 @@
         }
       }
     },
+    "暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
     "更改…": {
       "localizations": {
         "en": {
@@ -711,6 +891,16 @@
         }
       }
     },
+    "本地 · 离线运行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local · Offline"
+          }
+        }
+      }
+    },
     "本地版 · v%@": {
       "localizations": {
         "en": {
@@ -721,22 +911,22 @@
         }
       }
     },
-    "本次会议不再提示": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Don't Ask Again for This Meeting"
-          }
-        }
-      }
-    },
     "查看帮助": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "View Help"
+          }
+        }
+      }
+    },
+    "标记 ⌥⌘M": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark ⌥⌘M"
           }
         }
       }
@@ -771,6 +961,16 @@
         }
       }
     },
+    "浏览器会议只提示，不自动录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Browser meetings only prompt — they never auto-record"
+          }
+        }
+      }
+    },
     "添加": {
       "localizations": {
         "en": {
@@ -787,6 +987,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add App…"
+          }
+        }
+      }
+    },
+    "点击组合键录制新快捷键；Esc 取消，⌫ 清除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click a shortcut to record a new one. Esc cancels, ⌫ clears."
           }
         }
       }
@@ -957,6 +1167,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Notes are only ever saved on this Mac"
+          }
+        }
+      }
+    },
+    "继续": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
           }
         }
       }

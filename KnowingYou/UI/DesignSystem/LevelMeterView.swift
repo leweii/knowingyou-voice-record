@@ -15,7 +15,9 @@ struct LevelMeterView: View {
     var segmentSpacing: CGFloat = 5
     var minHeight: CGFloat = 4
     var maxHeight: CGFloat = 16
-    var color: Color = KYColor.textPrimary
+    /// nil → S22's height-graded color (accent → amber → red as a bar gets
+    /// louder), so clipping-level peaks are visible at a glance.
+    var color: Color? = nil
 
     nonisolated static let segmentCount = 5
 
@@ -32,6 +34,21 @@ struct LevelMeterView: View {
         return minHeight + clamped * (maxHeight - minHeight)
     }
 
+    /// Which color band a bar's level falls into: 0 accent, 1 amber, 2 red.
+    nonisolated static func band(for level: Float) -> Int {
+        if level >= 0.85 { return 2 }
+        if level >= 0.6 { return 1 }
+        return 0
+    }
+
+    static func gradedColor(for level: Float) -> Color {
+        switch band(for: level) {
+        case 2: KYColor.rec
+        case 1: KYColor.warn
+        default: KYColor.accent
+        }
+    }
+
     /// Most recent reading is last (rightmost bar); shifted left as new
     /// readings arrive, like a tiny scrolling waveform history.
     @State private var history: [Float] = Array(repeating: 0, count: LevelMeterView.segmentCount)
@@ -40,7 +57,7 @@ struct LevelMeterView: View {
         HStack(alignment: .center, spacing: segmentSpacing) {
             ForEach(history.indices, id: \.self) { index in
                 RoundedRectangle(cornerRadius: segmentWidth / 2)
-                    .fill(color)
+                    .fill(color ?? Self.gradedColor(for: history[index]))
                     .frame(width: segmentWidth, height: Self.barHeight(for: history[index], minHeight: minHeight, maxHeight: maxHeight))
             }
         }

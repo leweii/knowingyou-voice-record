@@ -36,4 +36,15 @@ struct LevelMeterViewTests {
         #expect(LevelMeterView.barHeight(for: 0, minHeight: 3, maxHeight: 12) == 3)
         #expect(LevelMeterView.barHeight(for: 1, minHeight: 3, maxHeight: 12) == 12)
     }
+
+    /// S22: bars are colored by loudness — accent (0), amber (1) from 0.6,
+    /// red (2) from 0.85 — so near-clipping peaks stand out.
+    @Test func colorBandThresholds() {
+        #expect(LevelMeterView.band(for: 0) == 0)
+        #expect(LevelMeterView.band(for: 0.59) == 0)
+        #expect(LevelMeterView.band(for: 0.6) == 1)
+        #expect(LevelMeterView.band(for: 0.84) == 1)
+        #expect(LevelMeterView.band(for: 0.85) == 2)
+        #expect(LevelMeterView.band(for: 1.5) == 2)
+    }
 }

@@ -1,5 +1,7 @@
 # 知鱼录音 (Knowing You) — UI 逐元素复刻规格
 
+> **2026-09-30 起视觉部分作废（S22）**：Jakob 否决了 Plaud 克隆版视觉，新设计语言以 [`design/ui-prototype.html`](design/ui-prototype.html) 为准，见 [`specs/S22-ui-redesign.md`](specs/S22-ui-redesign.md)。本文档仅保留为「每个界面必须有哪些元素 / 功能」的清单；§13 的去除清单（无联网 / 账号 / AI）仍然完全有效。下文的尺寸、颜色、坐标不再是实现依据。
+
 > 原型：Plaud 桌面端 v1.3.7 Beta 的 9 张截图，见 `reference-screenshots/`。
 > 原则：**截图里的每一个元素都复刻**（布局、尺寸、层级、控件样式、交互），只做三类改动：
 > 1. 去掉联网 / 账号 / 云同步 / 上传相关的功能（保留其占位与布局，替换为本地等价功能）

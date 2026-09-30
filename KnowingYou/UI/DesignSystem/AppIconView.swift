@@ -25,7 +25,7 @@ struct AppIconView: View {
                 Image(systemName: "app.dashed")
                     .resizable()
                     .padding(3)
-                    .foregroundStyle(KYColor.textSecondary)
+                    .foregroundStyle(KYColor.text2)
             }
         }
         .frame(width: size, height: size)

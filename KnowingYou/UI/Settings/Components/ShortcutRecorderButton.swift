@@ -5,7 +5,7 @@ import SwiftUI
 
 /// K3/K4/K6's shortcut display and recording interaction (02-ui-spec.md
 /// §11 "快捷键录制态"). Not `KeyboardShortcuts.Recorder` — its built-in style
-/// doesn't match this app's outlined-button look — just the package's
+/// doesn't match this app's keycap look — just the package's
 /// storage/registration/conflict-check APIs underneath a custom button.
 struct ShortcutRecorderButton: View {
     let name: KeyboardShortcuts.Name
@@ -15,35 +15,62 @@ struct ShortcutRecorderButton: View {
     @State private var currentShortcut: KeyboardShortcuts.Shortcut?
     @State private var keyMonitor: Any?
     @State private var clickMonitor: Any?
+    @State private var isHovering = false
 
     var body: some View {
-        Group {
-            if isRecording {
-                recordingLabel
-            } else {
-                OutlinedButton(displayLabel, isEnabled: isEnabled, action: startRecording)
+        Button(action: startRecording) {
+            Group {
+                if isRecording {
+                    Text("按下快捷键…")
+                        .font(KYFont.caption)
+                        .foregroundStyle(KYColor.accent)
+                        .padding(.horizontal, 8)
+                } else if let currentShortcut {
+                    HStack(spacing: 4) {
+                        ForEach(Array(Self.keycaps(for: currentShortcut).enumerated()), id: \.offset) { _, key in
+                            Keycap(text: key)
+                        }
+                    }
+                } else {
+                    Text("未设置")
+                        .font(KYFont.caption)
+                        .foregroundStyle(KYColor.text3)
+                        .padding(.horizontal, 8)
+                }
             }
+            .frame(minWidth: 112, minHeight: 32)
+            .padding(.horizontal, 4)
+            .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(KYColor.surface))
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(isRecording || isHovering ? KYColor.accent : KYColor.strokeStrong, lineWidth: isRecording ? 1.5 : 1)
+            )
+            .shadow(color: isRecording ? KYColor.accentGlow : .clear, radius: 10)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.45)
+        .onHover { isHovering = $0 }
+        .kyAnimation(KYMotion.state, value: isRecording)
+        .kyAnimation(KYMotion.state, value: currentShortcut)
         .onAppear { currentShortcut = KeyboardShortcuts.getShortcut(for: name) }
         .onDisappear { stopRecording() }
     }
 
-    private var displayLabel: LocalizedStringKey {
-        if let currentShortcut {
-            LocalizedStringKey(ShortcutFormatting.string(for: currentShortcut))
-        } else {
-            "未设置"
+    /// "⌥⌘R" → ["⌥", "⌘", "R"]: modifier glyphs are single characters, the
+    /// key label is whatever follows them (may be multi-character, e.g. "F5").
+    private static func keycaps(for shortcut: KeyboardShortcuts.Shortcut) -> [String] {
+        let string = ShortcutFormatting.string(for: shortcut)
+        let modifierGlyphs: Set<Character> = ["⌃", "⌥", "⇧", "⌘"]
+        var caps: [String] = []
+        var rest = Substring(string)
+        while let first = rest.first, modifierGlyphs.contains(first) {
+            caps.append(String(first))
+            rest = rest.dropFirst()
         }
-    }
-
-    private var recordingLabel: some View {
-        Text("按下快捷键…")
-            .font(KYFont.outlinedButton)
-            .foregroundStyle(KYColor.textPrimary)
-            .padding(.horizontal, 20)
-            .frame(height: 32)
-            .background(RoundedRectangle(cornerRadius: 6).fill(KYColor.bgWindow))
-            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(KYColor.controlOn, lineWidth: 1.5))
+        if !rest.isEmpty { caps.append(String(rest)) }
+        return caps
     }
 
     private func startRecording() {
@@ -122,6 +149,24 @@ struct ShortcutRecorderButton: View {
         alert.informativeText = String(localized: "请换一个组合键。")
         alert.addButton(withTitle: String(localized: "好"))
         alert.runModal()
+    }
+}
+
+/// One raised key, like a physical keycap.
+private struct Keycap: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12, weight: .medium, design: .monospaced))
+            .foregroundStyle(KYColor.text)
+            .frame(minWidth: 22, minHeight: 22)
+            .padding(.horizontal, text.count > 1 ? 5 : 0)
+            .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(KYColor.surface3))
+            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(KYColor.strokeStrong, lineWidth: 1))
+            .overlay(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 5).fill(KYColor.strokeStrong).frame(height: 1.5).padding(.horizontal, 1)
+            }
     }
 }
 

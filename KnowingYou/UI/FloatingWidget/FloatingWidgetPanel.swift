@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 
 /// The floating widget (02-ui-spec.md §9/§10, plan §5.4): a single
-/// `.nonactivatingPanel` that animates between a fixed-size 44×175 pill and
+/// `.nonactivatingPanel` that animates between a fixed-size 264×48 capsule
+/// (S22) and
 /// a notes window (default 418×380, now user-resizable within
 /// `notesMinSize`...`notesMaxSize` — Jakob's real-Mac feedback, 2026-09-24),
 /// anchored so its top-right corner never moves *during the expand/collapse
@@ -32,8 +33,11 @@ final class FloatingWidgetPanel {
     private var currentNotesStore: NotesStore?
     private var currentIsPaused = false
     private var currentDisplayedElapsed: TimeInterval = 0
+    private var markPulse = 0
+    private var screenshotPulse = 0
     private var moveObserver: NSObjectProtocol?
     private var resizeObserver: NSObjectProtocol?
+    private var commandDragMonitor: Any?
 
     /// User-draggable bounds for the notes window (Jakob's real-Mac feedback,
     /// 2026-09-24: "窗口大小需要可调整"). The pill never gets `.resizable` —
@@ -46,6 +50,7 @@ final class FloatingWidgetPanel {
     /// visibly overlapped/clipped (Jakob found this at min height, 2026-09-24
     /// follow-up). Raised to comfortably clear both.
     private static let notesMinSize = CGSize(width: 420, height: 360)
+    private static let pillCornerRadius = PillView.size.height / 2
     private static let notesMaxSize = CGSize(width: 900, height: 800)
 
     /// Deliberately not constructed here — see S15's decision record:
@@ -74,11 +79,26 @@ final class FloatingWidgetPanel {
     func show() {
         let panel = ensurePanel()
         isExpanded = false
+        hostingView?.cornerRadius = Self.pillCornerRadius
         applyFrame(for: PillView.size, panel: panel, display: false)
         positionAtDefaultOrRestoredOrigin(panel)
-        panel.alphaValue = 1
         rebuildContent()
+        guard !KYMotion.reduceMotion else {
+            panel.alphaValue = 1
+            panel.orderFrontRegardless()
+            return
+        }
+        // Slide in from the right edge while fading up.
+        let final = panel.frame.origin
+        panel.alphaValue = 0
+        panel.setFrameOrigin(NSPoint(x: final.x + 24, y: final.y))
         panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = KYMotion.windowMorphDuration
+            context.timingFunction = KYMotion.windowMorphTiming
+            panel.animator().alphaValue = 1
+            panel.animator().setFrameOrigin(final)
+        }
     }
 
     func hide(animated: Bool = true) {
@@ -114,6 +134,24 @@ final class FloatingWidgetPanel {
         currentNotesStore = store
     }
 
+    // MARK: - Feedback pulses (M6)
+
+    /// Gold shockwave from the mark button / live dot — fired for both the
+    /// toolbar button and the ⌥⌘M hotkey, so a hotkey press gets visible
+    /// confirmation too.
+    func pulseMark() {
+        markPulse += 1
+        guard hostingView != nil else { return }
+        rebuildContent()
+    }
+
+    /// Shutter flash + viewfinder brackets after a screenshot mark lands.
+    func pulseScreenshot() {
+        screenshotPulse += 1
+        guard hostingView != nil else { return }
+        rebuildContent()
+    }
+
     func expand() {
         guard let panel, !isExpanded else { return }
         isExpanded = true
@@ -135,10 +173,12 @@ final class FloatingWidgetPanel {
         panel.styleMask.insert(.resizable)
         panel.minSize = Self.notesMinSize
         panel.maxSize = Self.notesMaxSize
+        hostingView?.cornerRadius = KYRadius.floating
         rebuildContent() // renders NotesView while still hidden — no jitter
         let targetSize = Preferences.shared.notesWindowSize ?? NotesView.size
-        applyFrame(for: targetSize, panel: panel, display: true) { [weak panel] in
+        applyFrame(for: targetSize, panel: panel, display: true) { [weak self, weak panel] in
             panel?.contentView?.isHidden = false
+            self?.fadeContentIn()
             // Jakob reported (2026-09-24) that clicking into the title field
             // or editor produced no typed text at all. `becomesKeyOnlyIfNeeded`
             // is supposed to let a click alone promote the panel to key
@@ -166,9 +206,11 @@ final class FloatingWidgetPanel {
         // Only the notes state is user-resizable — the pill is a fixed-size
         // status widget, not a window someone would want to drag-resize.
         panel.styleMask.remove(.resizable)
+        hostingView?.cornerRadius = Self.pillCornerRadius
         rebuildContent() // renders PillView while still hidden — no jitter
-        applyFrame(for: PillView.size, panel: panel, display: true) { [weak panel] in
+        applyFrame(for: PillView.size, panel: panel, display: true) { [weak self, weak panel] in
             panel?.contentView?.isHidden = false
+            self?.fadeContentIn()
         }
     }
 
@@ -212,7 +254,7 @@ final class FloatingWidgetPanel {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
 
-        let hostingView = RoundedHostingView(rootView: FloatingWidgetContentView.placeholder, cornerRadius: 12)
+        let hostingView = RoundedHostingView(rootView: FloatingWidgetContentView.placeholder, cornerRadius: Self.pillCornerRadius)
         hostingView.frame = NSRect(origin: .zero, size: PillView.size)
         panel.contentView = hostingView
 
@@ -232,6 +274,15 @@ final class FloatingWidgetPanel {
             Task { @MainActor in self?.persistNotesWindowSizeIfExpanded() }
         }
 
+        // ⌘-drag anywhere in the widget moves it, even over the title field
+        // and editor, where a plain drag has to select text instead. Lets the
+        // notes window be pushed out of the way of the meeting from any spot.
+        commandDragMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak panel] event in
+            guard let panel, event.window === panel, event.modifierFlags.contains(.command) else { return event }
+            panel.performDrag(with: event)
+            return nil
+        }
+
         self.panel = panel
         self.hostingView = hostingView
         return panel
@@ -241,10 +292,12 @@ final class FloatingWidgetPanel {
         guard let hostingView else { return }
         let content: FloatingWidgetContentView.Content = isExpanded && currentNotesStore != nil
             ? .notes(store: currentNotesStore!, isPaused: currentIsPaused, micLevel: currentLevel, displayedElapsed: currentDisplayedElapsed)
-            : .pill(level: currentLevel)
+            : .pill(level: currentLevel, displayedElapsed: currentDisplayedElapsed, isPaused: currentIsPaused)
 
         hostingView.rootView = FloatingWidgetContentView(
             content: content,
+            markPulse: markPulse,
+            screenshotPulse: screenshotPulse,
             onExpand: { [weak self] in self?.expand() },
             onCollapse: { [weak self] in self?.collapse() },
             onStop: { [weak self] in self?.onStop() },
@@ -275,7 +328,10 @@ final class FloatingWidgetPanel {
             return
         }
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.25
+            // M3: a slight overshoot in the timing curve makes the capsule
+            // "grow" into the notes window elastically, like the prototype.
+            context.duration = KYMotion.reduceMotion ? 0.01 : KYMotion.windowMorphDuration
+            context.timingFunction = KYMotion.windowMorphTiming
             panel.animator().setFrame(newFrame, display: true)
         } completionHandler: { [weak self] in
             Task { @MainActor in
@@ -284,6 +340,17 @@ final class FloatingWidgetPanel {
             }
         }
         hostingView?.frame = NSRect(origin: .zero, size: size)
+    }
+
+    /// Content is hidden during the frame animation (avoids SwiftUI relayout
+    /// jitter mid-resize); bring it back with a short fade rather than a pop.
+    private func fadeContentIn() {
+        guard let hostingView, !KYMotion.reduceMotion else { return }
+        hostingView.alphaValue = 0
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.18
+            hostingView.animator().alphaValue = 1
+        }
     }
 
     private func positionAtDefaultOrRestoredOrigin(_ panel: NSPanel) {
@@ -297,8 +364,10 @@ final class FloatingWidgetPanel {
     private func defaultOrigin() -> NSPoint {
         guard let screen = NSScreen.main else { return .zero }
         let frame = screen.visibleFrame
+        // Top-right, just under the menu bar — where the capsule reads as a
+        // "dynamic island" for the recording, clear of most meeting UIs.
         let x = frame.maxX - PillView.size.width - 16
-        let y = frame.midY - PillView.size.height / 2
+        let y = frame.maxY - PillView.size.height - 16
         return NSPoint(x: x, y: y)
     }
 
@@ -330,11 +399,13 @@ final class FloatingWidgetPanel {
 /// expands or collapses.
 struct FloatingWidgetContentView: View {
     enum Content {
-        case pill(level: Float)
+        case pill(level: Float, displayedElapsed: TimeInterval, isPaused: Bool)
         case notes(store: NotesStore, isPaused: Bool, micLevel: Float, displayedElapsed: TimeInterval)
     }
 
     let content: Content
+    var markPulse: Int = 0
+    var screenshotPulse: Int = 0
     var onExpand: () -> Void = {}
     var onCollapse: () -> Void = {}
     var onStop: () -> Void = {}
@@ -345,12 +416,32 @@ struct FloatingWidgetContentView: View {
     var onHideWidget: () -> Void = {}
     var onOpenSettings: () -> Void = {}
 
-    static var placeholder: FloatingWidgetContentView { FloatingWidgetContentView(content: .pill(level: 0)) }
+    static var placeholder: FloatingWidgetContentView {
+        FloatingWidgetContentView(content: .pill(level: 0, displayedElapsed: 0, isPaused: false))
+    }
 
     var body: some View {
+        stateView
+            .overlay {
+                WidgetFeedbackOverlay(
+                    markPulse: markPulse,
+                    screenshotPulse: screenshotPulse,
+                    markOrigin: isPill ? UnitPoint(x: 0.08, y: 0.5) : UnitPoint(x: 0.82, y: 0.935),
+                    cornerRadius: isPill ? PillView.size.height / 2 : KYRadius.floating
+                )
+            }
+    }
+
+    private var isPill: Bool {
+        if case .pill = content { return true }
+        return false
+    }
+
+    @ViewBuilder
+    private var stateView: some View {
         switch content {
-        case .pill(let level):
-            PillView(level: level, onExpand: onExpand, onStop: onStop)
+        case .pill(let level, let displayedElapsed, let isPaused):
+            PillView(level: level, displayedElapsed: displayedElapsed, isPaused: isPaused, onExpand: onExpand, onStop: onStop)
         case .notes(let store, let isPaused, let micLevel, let displayedElapsed):
             NotesView(
                 notesStore: store,

@@ -16,7 +16,8 @@ struct NotesEditor: NSViewRepresentable {
         let textView = PasteAwareTextView()
         textView.delegate = context.coordinator
         textView.font = .systemFont(ofSize: 14)
-        textView.textColor = NSColor(KYColor.textPrimary)
+        textView.textColor = NSColor(KYColor.text)
+        textView.insertionPointColor = NSColor(KYColor.accent)
         textView.isRichText = false
         textView.drawsBackground = false
         textView.textContainerInset = NSSize(width: 0, height: 0)

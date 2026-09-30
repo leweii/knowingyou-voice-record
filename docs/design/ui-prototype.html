@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>知鱼录音 · 新 UI 原型（深色专业）</title>
+<style>
+/* =========================================================
+   Design tokens — 深色为默认，浅色同构映射
+   ========================================================= */
+:root {
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  --r-s: 6px; --r-m: 10px; --r-l: 14px; --r-xl: 20px;
+  --ease: cubic-bezier(.22,1,.36,1);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+}
+[data-theme="dark"] {
+  --bg: #161618;
+  --bg-deep: #0E0E10;
+  --surface: #1F1F22;
+  --surface-2: #26262A;
+  --surface-3: #2E2E33;
+  --stroke: #2C2C30;
+  --stroke-strong: #3A3A40;
+  --text: #F2F2F4;
+  --text-2: #8E8E96;
+  --text-3: #5C5C64;
+  --accent: #3DDBD9;
+  --accent-ink: #062B2B;
+  --accent-soft: rgba(61,219,217,.12);
+  --accent-glow: rgba(61,219,217,.45);
+  --rec: #FF4D5E;
+  --rec-soft: rgba(255,77,94,.14);
+  --rec-glow: rgba(255,77,94,.55);
+  --warn: #FFC857;
+  --glass: rgba(30,30,34,.72);
+  --shadow: 0 30px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.05) inset;
+  --wall-a: #0b3b44; --wall-b: #2a1030; --wall-c: #0d1a33;
+}
+[data-theme="light"] {
+  --bg: #F4F5F7;
+  --bg-deep: #E9EBEF;
+  --surface: #FFFFFF;
+  --surface-2: #F6F7F9;
+  --surface-3: #ECEEF2;
+  --stroke: #E3E5EA;
+  --stroke-strong: #D2D5DC;
+  --text: #16171A;
+  --text-2: #6B6E76;
+  --text-3: #A4A7AE;
+  --accent: #0FA3A1;
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(15,163,161,.10);
+  --accent-glow: rgba(15,163,161,.35);
+  --rec: #E5384A;
+  --rec-soft: rgba(229,56,74,.10);
+  --rec-glow: rgba(229,56,74,.40);
+  --warn: #D99A12;
+  --glass: rgba(255,255,255,.72);
+  --shadow: 0 30px 70px -24px rgba(20,30,50,.28), 0 0 0 1px rgba(0,0,0,.04) inset;
+  --wall-a: #b9ecea; --wall-b: #f3d3e6; --wall-c: #cfdcff;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font);
+  background: var(--bg-deep);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  transition: background .5s var(--ease), color .5s var(--ease);
+  overflow-x: hidden;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+input { font: inherit; color: inherit; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- aurora background ---------- */
+.aurora { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.aurora i {
+  position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
+  filter: blur(90px); opacity: .55; mix-blend-mode: screen;
+  animation: drift 26s ease-in-out infinite alternate;
+}
+[data-theme="light"] .aurora i { mix-blend-mode: multiply; opacity: .45; }
+.aurora i:nth-child(1) { background: var(--wall-a); top: -20vmax; left: -10vmax; }
+.aurora i:nth-child(2) { background: var(--wall-b); bottom: -25vmax; right: -15vmax; animation-duration: 32s; }
+.aurora i:nth-child(3) { background: var(--wall-c); top: 30%; left: 35%; animation-duration: 38s; }
+@keyframes drift {
+  0% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(8vmax,-6vmax) scale(1.15); }
+  100% { transform: translate(-6vmax,5vmax) scale(.95); }
+}
+.grain { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* ---------- page chrome ---------- */
+.topnav {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 18px;
+  padding: 14px 32px;
+  background: color-mix(in srgb, var(--bg-deep) 70%, transparent);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--stroke);
+}
+.topnav .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.topnav nav { display: flex; gap: 4px; margin-left: 12px; }
+.topnav nav a {
+  color: var(--text-2); text-decoration: none; font-size: 13px;
+  padding: 6px 12px; border-radius: 999px; transition: .2s;
+}
+.topnav nav a:hover { color: var(--text); background: var(--surface-2); }
+.topnav .spacer { flex: 1; }
+.theme-switch {
+  display: flex; gap: 2px; padding: 3px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--stroke);
+}
+.theme-switch button { padding: 5px 12px; border-radius: 999px; font-size: 12px; color: var(--text-2); transition: .25s var(--ease); }
+.theme-switch button.on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 18px var(--accent-glow); }
+
+section.stage { padding: 72px 32px 40px; max-width: 1240px; margin: 0 auto; }
+.stage-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 28px; }
+.stage-head .idx { font-family: var(--mono); color: var(--accent); font-size: 13px; letter-spacing: .1em; }
+.stage-head h2 { margin: 0; font-size: 28px; font-weight: 650; letter-spacing: -.01em; }
+.stage-head p { margin: 0; color: var(--text-2); font-size: 14px; }
+.hint { color: var(--text-3); font-size: 12px; margin-top: 14px; }
+.hint kbd, kbd.k {
+  font-family: var(--mono); font-size: 11px; padding: 2px 6px; border-radius: 5px;
+  background: var(--surface-2); border: 1px solid var(--stroke-strong); border-bottom-width: 2px; color: var(--text);
+}
+
+/* hero */
+.hero { text-align: center; padding: 90px 20px 20px; }
+.hero h1 {
+  font-size: clamp(40px, 6vw, 72px); margin: 18px 0 10px; letter-spacing: -.03em; font-weight: 750;
+  background: linear-gradient(100deg, var(--text) 20%, var(--accent) 45%, var(--text) 70%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+@keyframes shimmer { to { background-position: -250% 0; } }
+.hero p { color: var(--text-2); font-size: 16px; max-width: 560px; margin: 0 auto; line-height: 1.7; }
+.hero .pills { display: flex; gap: 10px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+.tag {
+  font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--stroke-strong);
+  color: var(--text-2); background: var(--surface); display: inline-flex; gap: 6px; align-items: center;
+}
+.tag b { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* ---------- logo ---------- */
+.logo { width: 28px; height: 28px; border-radius: 8px; position: relative; flex: none;
+  background: linear-gradient(145deg, #3DDBD9, #1b8fa8 60%, #213a6b);
+  display: grid; place-items: center; box-shadow: 0 0 20px rgba(61,219,217,.35);
+}
+.logo svg { width: 70%; height: 70%; }
+.logo.xl { width: 96px; height: 96px; border-radius: 26px; }
+
+/* ---------- glass window ---------- */
+.win {
+  background: var(--surface); border-radius: var(--r-l);
+  box-shadow: var(--shadow); border: 1px solid var(--stroke);
+  position: relative; overflow: hidden;
+}
+.glass { background: var(--glass); backdrop-filter: blur(30px) saturate(1.6); }
+.spot::before { /* mouse spotlight */
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(420px circle at var(--mx, -100px) var(--my, -100px), var(--accent-soft), transparent 60%);
+  transition: opacity .3s; opacity: 0;
+}
+.spot:hover::before { opacity: 1; }
+.spot > * { position: relative; z-index: 1; }
+.traffic { display: flex; gap: 8px; }
+.traffic i { width: 12px; height: 12px; border-radius: 50%; background: #FF5F57; }
+.traffic i:nth-child(2) { background: #FEBC2E; } .traffic i:nth-child(3) { background: #28C840; }
+
+/* ---------- controls ---------- */
+.toggle { width: 40px; height: 24px; border-radius: 999px; background: var(--surface-3); position: relative;
+  border: 1px solid var(--stroke-strong); transition: .3s var(--ease); flex: none; }
+.toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: .35s var(--spring); }
+.toggle.on { background: var(--accent); border-color: transparent; box-shadow: 0 0 16px var(--accent-glow); }
+.toggle.on::after { left: 18px; }
+
+.btn { height: 32px; padding: 0 14px; border-radius: 8px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--stroke-strong); transition: .2s var(--ease); white-space: nowrap; }
+.btn:hover { background: var(--surface-3); transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(.97); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600;
+  box-shadow: 0 6px 20px -6px var(--accent-glow); }
+.btn.primary:hover { box-shadow: 0 8px 28px -4px var(--accent-glow); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+.btn.ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn.danger { background: var(--rec); color: #fff; border-color: transparent; box-shadow: 0 6px 20px -6px var(--rec-glow); }
+
+.seg { display: inline-flex; padding: 3px; background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 9px; position: relative; }
+.seg button { position: relative; z-index: 1; padding: 5px 12px; font-size: 12.5px; color: var(--text-2); border-radius: 6px; transition: color .25s; }
+.seg button.on { color: var(--text); }
+.seg .thumb { position: absolute; top: 3px; bottom: 3px; border-radius: 6px; background: var(--surface-3);
+  box-shadow: 0 1px 4px rgba(0,0,0,.25), 0 0 0 1px var(--stroke-strong) inset; transition: .35s var(--spring); }
+
+.select { position: relative; }
+.select > button { height: 32px; padding: 0 30px 0 12px; border-radius: 8px; font-size: 13px; background: var(--surface-2);
+  border: 1px solid var(--stroke-strong); min-width: 150px; text-align: left; position: relative; }
+.select > button::after { content: ""; position: absolute; right: 12px; top: 12px; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--text-2); border-bottom: 1.5px solid var(--text-2); transform: rotate(45deg); transition: .25s; }
+.select.open > button::after { transform: rotate(-135deg); top: 14px; }
+.select ul { position: absolute; right: 0; top: 38px; min-width: 100%; list-style: none; margin: 0; padding: 5px; z-index: 20;
+  background: var(--glass); backdrop-filter: blur(24px); border: 1px solid var(--stroke-strong); border-radius: 10px;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,.5); opacity: 0; transform: translateY(-6px) scale(.97); pointer-events: none;
+  transition: .2s var(--ease); transform-origin: top right; }
+.select.open ul { opacity: 1; transform: none; pointer-events: auto; }
+.select li { padding: 7px 10px; border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.select li:hover { background: var(--accent); color: var(--accent-ink); }
+.select li .ck { width: 12px; opacity: 0; } .select li.sel .ck { opacity: 1; }
+
+/* level meter — 青→黄→红 */
+.meter { display: flex; gap: 3px; align-items: flex-end; height: 16px; }
+.meter i { width: 4px; border-radius: 2px; background: var(--surface-3); transition: background .08s, box-shadow .08s; }
+.meter i.lit { box-shadow: 0 0 6px currentColor; }
+
+/* =========================================================
+   01 菜单栏 + popover
+   ========================================================= */
+.desktop {
+  position: relative; height: 640px; border-radius: 22px; overflow: hidden; border: 1px solid var(--stroke);
+  background:
+    radial-gradient(900px 500px at 15% 10%, var(--wall-a), transparent 60%),
+    radial-gradient(800px 500px at 90% 90%, var(--wall-b), transparent 60%),
+    linear-gradient(160deg, var(--wall-c), var(--bg-deep));
+}
+.menubar { height: 30px; display: flex; align-items: center; justify-content: flex-end; gap: 18px; padding: 0 18px;
+  background: color-mix(in srgb, var(--bg-deep) 55%, transparent); backdrop-filter: blur(20px); font-size: 13px; color: var(--text); }
+.menubar .mi { opacity: .75; }
+.status-icon { position: relative; width: 26px; height: 22px; border-radius: 6px; display: grid; place-items: center; cursor: pointer; transition: .2s; }
+.status-icon:hover, .status-icon.active { background: rgba(255,255,255,.14); }
+.status-icon svg { width: 17px; height: 17px; }
+.status-icon .dot { position: absolute; right: 1px; top: 1px; width: 7px; height: 7px; border-radius: 50%; background: var(--rec);
+  box-shadow: 0 0 0 0 var(--rec-glow); opacity: 0; transition: .3s; }
+.status-icon .dot.show { opacity: 1; animation: breathe 1.6s ease-in-out infinite; }
+.status-icon .dot.warn { background: var(--warn); opacity: 1; animation: none; }
+@keyframes breathe { 0%,100% { box-shadow: 0 0 0 0 var(--rec-glow); } 50% { box-shadow: 0 0 0 5px transparent; } }
+
+.popover { position: absolute; right: 90px; top: 40px; width: 340px; border-radius: 16px; padding: 0;
+  transform-origin: top right; transition: .35s var(--spring); }
+.popover.hidden { opacity: 0; transform: translateY(-8px) scale(.94); pointer-events: none; }
+.pop-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
+.pop-head .name { font-weight: 600; font-size: 14px; }
+.pop-head .sub { font-size: 11px; color: var(--text-2); display: flex; align-items: center; gap: 5px; }
+.pop-head .sub i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.pop-head .icons { margin-left: auto; display: flex; gap: 2px; }
+.icon-btn { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--text-2); transition: .2s; }
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn svg { width: 16px; height: 16px; }
+
+.detect-banner { margin: 0 12px 10px; padding: 9px 12px; border-radius: 10px; font-size: 12.5px; display: flex; align-items: center; gap: 8px;
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text);
+  overflow: hidden; max-height: 60px; transition: .4s var(--ease); }
+.detect-banner.hidden { max-height: 0; padding: 0 12px; margin-bottom: 0; border-width: 0; opacity: 0; }
+.detect-banner .ping { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); position: relative; flex: none; }
+.detect-banner .ping::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--accent); animation: ping 1.4s infinite; }
+@keyframes ping { to { transform: scale(3); opacity: 0; } }
+
+.rec-hero { margin: 0 12px; padding: 16px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--stroke); position: relative; overflow: hidden; }
+.rec-hero canvas { width: 100%; height: 64px; display: block; }
+.rec-hero .row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.rec-hero .timer { font-size: 30px; font-weight: 300; letter-spacing: .02em; }
+.rec-hero .state { font-size: 11px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+.rec-hero .state i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.recording .rec-hero .state i { background: var(--rec); animation: breathe 1.6s infinite; }
+.recording .rec-hero { border-color: color-mix(in srgb, var(--rec) 40%, var(--stroke)); }
+.recording .rec-hero::after { content: ""; position: absolute; inset: -1px; border-radius: 14px; pointer-events: none;
+  background: conic-gradient(from var(--ang), transparent 0 70%, var(--rec) 85%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  padding: 1px; animation: spin 3s linear infinite; }
+@property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes spin { to { --ang: 360deg; } }
+
+.record-btn { margin: 12px; width: calc(100% - 24px); height: 46px; border-radius: 12px; font-size: 15px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 10px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #2d6cdf)); color: var(--accent-ink);
+  box-shadow: 0 10px 30px -10px var(--accent-glow); transition: .3s var(--ease); }
+.record-btn:hover { transform: translateY(-1px); box-shadow: 0 14px 36px -8px var(--accent-glow); }
+.record-btn:active { transform: scale(.98); }
+.record-btn .glyph { width: 14px; height: 14px; border-radius: 50%; background: currentColor; transition: .35s var(--spring); }
+.recording .record-btn { background: linear-gradient(135deg, var(--rec), #c62a64); color: #fff; box-shadow: 0 10px 30px -10px var(--rec-glow); }
+.recording .record-btn .glyph { border-radius: 3px; width: 12px; height: 12px; }
+.record-btn .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,.45); transform: scale(0); animation: rip .7s ease-out forwards; pointer-events: none; }
+@keyframes rip { to { transform: scale(4); opacity: 0; } }
+.record-btn .shine { position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+  transform: translateX(-100%); animation: sweep 3.5s ease-in-out infinite; }
+@keyframes sweep { 60%,100% { transform: translateX(100%); } }
+
+.recent { border-top: 1px solid var(--stroke); padding: 6px 6px 4px; }
+.recent-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 12px; color: var(--text-2); cursor: pointer; }
+.recent-head .chev { transition: .3s var(--ease); }
+.recent.collapsed .chev { transform: rotate(-90deg); }
+.recent-list { display: grid; gap: 2px; max-height: 240px; overflow: hidden; transition: max-height .4s var(--ease), opacity .3s; }
+.recent.collapsed .recent-list { max-height: 0; opacity: 0; }
+.rec-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; transition: .2s; cursor: default; }
+.rec-item:hover { background: var(--surface-2); }
+.rec-item .play { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); color: var(--text-2); transition: .25s; flex: none; }
+.rec-item:hover .play { background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 14px var(--accent-glow); }
+.rec-item .t { font-size: 13px; } .rec-item .m { font-size: 11px; color: var(--text-2); }
+.rec-item .app { margin-left: auto; font-size: 10.5px; padding: 2px 7px; border-radius: 999px; background: var(--surface-3); color: var(--text-2); }
+.rec-item .spark { display: flex; gap: 1.5px; align-items: center; height: 18px; margin-left: 6px; opacity: .6; }
+.rec-item .spark i { width: 2px; background: var(--text-3); border-radius: 1px; }
+.pop-foot { padding: 10px 16px 12px; font-size: 11px; color: var(--text-3); display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--stroke); }
+
+/* =========================================================
+   02 浮窗：灵动岛胶囊 ⇄ 笔记窗
+   ========================================================= */
+.widget-stage { position: relative; height: 560px; border-radius: 22px; overflow: hidden; border: 1px solid var(--stroke);
+  background: linear-gradient(160deg, var(--wall-c), var(--bg-deep)); }
+.fake-meeting { position: absolute; inset: 24px 24px 24px 24px; border-radius: 14px; display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; padding: 10px;
+  background: rgba(0,0,0,.25); opacity: .55; }
+[data-theme="light"] .fake-meeting { background: rgba(255,255,255,.35); }
+.fake-meeting div { border-radius: 10px; background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); display: grid; place-items: center; font-size: 12px; color: var(--text-2); }
+
+.fw { position: absolute; right: 40px; top: 40px; overflow: hidden;
+  transition: width .55s var(--spring), height .55s var(--spring), border-radius .55s var(--ease);
+  width: 300px; height: 56px; border-radius: 28px; background: var(--glass); backdrop-filter: blur(30px) saturate(1.7);
+  border: 1px solid var(--stroke-strong); box-shadow: var(--shadow); }
+.fw.expanded { width: 440px; height: 440px; border-radius: 20px; }
+.fw .pill, .fw .notes { position: absolute; inset: 0; transition: opacity .25s, transform .45s var(--ease); }
+.fw .notes { opacity: 0; transform: scale(.96); pointer-events: none; }
+.fw.expanded .pill { opacity: 0; transform: scale(.9); pointer-events: none; }
+.fw.expanded .notes { opacity: 1; transform: none; pointer-events: auto; transition-delay: .15s; }
+
+.pill { display: flex; align-items: center; gap: 12px; padding: 0 8px 0 16px; }
+.pill .rdot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); box-shadow: 0 0 10px var(--rec); animation: breathe 1.6s infinite; flex: none; }
+.paused .pill .rdot, .paused .ntool .rdot { background: var(--warn); box-shadow: 0 0 10px var(--warn); animation: none; }
+.pill .timer { font-size: 15px; min-width: 64px; }
+.pill .wave { flex: 1; height: 28px; display: flex; align-items: center; gap: 2px; }
+.pill .wave i { flex: 1; border-radius: 2px; background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 40%, transparent)); min-height: 2px; transition: height .09s; }
+.paused .pill .wave i { background: var(--text-3); }
+.pill .expand { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); transition: .25s; flex: none; }
+.pill .expand:hover { background: var(--accent); color: var(--accent-ink); transform: rotate(-8deg) scale(1.05); box-shadow: 0 0 16px var(--accent-glow); }
+.pill .expand svg { width: 17px; height: 17px; }
+
+.notes { display: flex; flex-direction: column; }
+.n-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 6px 16px; }
+.n-head .meta { font-size: 11px; color: var(--text-2); display: flex; gap: 6px; align-items: center; }
+.n-head .meta .app { padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.n-head .sp { flex: 1; }
+.n-title { border: 0; background: transparent; outline: none; font-size: 20px; font-weight: 650; padding: 4px 16px 8px; letter-spacing: -.01em; }
+.n-title::placeholder { color: var(--text-3); }
+.n-body { flex: 1; overflow-y: auto; padding: 4px 10px 8px; scroll-behavior: smooth; }
+.n-body::-webkit-scrollbar { width: 0; }
+.entry { display: flex; gap: 10px; padding: 6px 6px; border-radius: 8px; align-items: flex-start; animation: pop .45s var(--spring); }
+.entry:hover { background: var(--surface-2); }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.entry .ts { font-family: var(--mono); font-size: 11px; color: var(--text-2); padding: 2px 6px; border-radius: 5px; background: var(--surface-3); flex: none; margin-top: 1px; }
+.entry .tx { font-size: 13.5px; line-height: 1.55; }
+.entry.mark .ts { background: var(--warn); color: #2a1d00; }
+.entry.mark .tx { color: var(--warn); font-weight: 600; }
+.entry.mark { background: color-mix(in srgb, var(--warn) 10%, transparent); }
+.entry.shot .ts { background: var(--accent); color: var(--accent-ink); }
+.entry.event .tx { color: var(--text-2); font-style: italic; font-size: 12.5px; }
+.entry .thumb { margin-top: 6px; width: 150px; height: 84px; border-radius: 8px; border: 1px solid var(--stroke-strong);
+  background: linear-gradient(135deg, var(--wall-a), var(--wall-c)); display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; padding: 4px; }
+.entry .thumb i { border-radius: 3px; background: rgba(255,255,255,.12); }
+.n-input { display: flex; gap: 8px; align-items: center; margin: 0 12px 8px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--stroke); transition: .25s; }
+.n-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.n-input input { flex: 1; border: 0; outline: none; background: transparent; font-size: 13.5px; }
+.n-input input::placeholder { color: var(--text-3); }
+.n-input .ts-live { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+.ntool { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--stroke); background: color-mix(in srgb, var(--surface) 50%, transparent); }
+.tbtn { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--stroke); transition: .2s var(--ease); position: relative; }
+.tbtn:hover { background: var(--surface-3); transform: translateY(-2px); }
+.tbtn:active { transform: scale(.92); }
+.tbtn svg { width: 17px; height: 17px; }
+.tbtn.stop { color: var(--rec); }
+.tbtn.stop:hover { background: var(--rec); color: #fff; box-shadow: 0 0 18px var(--rec-glow); }
+.tbtn .tip { position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%) translateY(4px); font-size: 11px; white-space: nowrap; padding: 4px 8px; border-radius: 6px;
+  background: var(--text); color: var(--bg); opacity: 0; pointer-events: none; transition: .2s; }
+.tbtn:hover .tip { opacity: 1; transform: translateX(-50%); }
+.ntool .mid { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; }
+.ntool .rdot { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); animation: breathe 1.6s infinite; }
+.flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 30; }
+.flash.go { animation: flash .5s ease-out; }
+@keyframes flash { 0% { opacity: .85; } 100% { opacity: 0; } }
+.mark-burst { position: absolute; pointer-events: none; z-index: 30; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--warn); animation: burst .7s ease-out forwards; }
+@keyframes burst { to { transform: scale(12); opacity: 0; } }
+.idle-cta { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); text-align: center; color: var(--text-2); font-size: 13px; }
+
+/* =========================================================
+   03 会议检测提醒
+   ========================================================= */
+.prompt-stage { position: relative; height: 300px; border-radius: 22px; overflow: hidden; border: 1px solid var(--stroke);
+  background: radial-gradient(700px 300px at 80% 0%, var(--wall-a), transparent 70%), linear-gradient(160deg, var(--wall-c), var(--bg-deep)); }
+.toast { position: absolute; right: 24px; top: 24px; width: 380px; border-radius: 18px; padding: 16px; display: flex; gap: 14px; align-items: center;
+  transition: .6s var(--spring); }
+.toast.out { transform: translateX(440px); opacity: 0; }
+.toast .ring { width: 52px; height: 52px; position: relative; flex: none; display: grid; place-items: center; }
+.toast .ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.toast .ring circle { fill: none; stroke-width: 3; }
+.toast .ring .bg { stroke: var(--surface-3); }
+.toast .ring .fg { stroke: var(--accent); stroke-linecap: round; filter: drop-shadow(0 0 4px var(--accent)); transition: stroke-dashoffset 1s linear; }
+.toast .ring .app-ic { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #2D8CFF, #0B5CD5); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px; }
+.toast h4 { margin: 0 0 3px; font-size: 14px; } .toast p { margin: 0; font-size: 12px; color: var(--text-2); }
+.toast .acts { display: flex; flex-direction: column; gap: 6px; margin-left: auto; }
+.toast .acts .btn { height: 30px; justify-content: center; }
+.toast .x { position: absolute; top: 8px; left: 8px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; opacity: 0; transition: .2s; font-size: 10px; color: var(--text-2); }
+.toast:hover .x { opacity: 1; }
+
+/* =========================================================
+   04 偏好设置
+   ========================================================= */
+.settings { display: grid; grid-template-columns: 220px 1fr; height: 620px; }
+.side { background: color-mix(in srgb, var(--bg) 70%, transparent); border-right: 1px solid var(--stroke); padding: 14px 10px; display: flex; flex-direction: column; position: relative; }
+.side .traffic { padding: 2px 8px 22px; }
+.side-list { position: relative; display: grid; gap: 2px; }
+.side-ind { position: absolute; left: 0; right: 0; height: 38px; border-radius: 9px; background: var(--surface-3); transition: top .45s var(--spring);
+  box-shadow: 0 0 0 1px var(--stroke-strong) inset; }
+.side-ind::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.side-item { position: relative; z-index: 1; height: 38px; display: flex; align-items: center; gap: 11px; padding: 0 14px; border-radius: 9px; font-size: 13.5px; color: var(--text-2); transition: color .2s; text-align: left; }
+.side-item:hover { color: var(--text); }
+.side-item.on { color: var(--text); font-weight: 550; }
+.side-item svg { width: 16px; height: 16px; }
+.side-item.on svg { color: var(--accent); }
+.side-card { margin-top: auto; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--stroke); display: flex; gap: 10px; align-items: center; }
+.side-card .t { font-size: 13px; font-weight: 600; } .side-card .s { font-size: 11px; color: var(--text-2); display: flex; gap: 5px; align-items: center; }
+.side-card .s i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+.pane { overflow-y: auto; padding: 26px 32px 40px; }
+.pane::-webkit-scrollbar { width: 8px; } .pane::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; }
+.page { display: none; } .page.on { display: block; } .page.on.anim { animation: pageIn .45s var(--ease); }
+@keyframes pageIn { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } }
+.page h3 { margin: 0 0 4px; font-size: 22px; font-weight: 650; letter-spacing: -.01em; }
+.page .lead { color: var(--text-2); font-size: 13px; margin: 0 0 22px; }
+.group-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; color: var(--text-3); margin: 22px 4px 8px; text-transform: uppercase; }
+.card { background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 12px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; min-height: 52px; transition: background .2s; }
+.row + .row { border-top: 1px solid var(--stroke); }
+.row:hover { background: color-mix(in srgb, var(--surface-3) 40%, transparent); }
+.row .ric { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-3); color: var(--accent); flex: none; }
+.row .ric svg { width: 16px; height: 16px; }
+.row .txt { flex: 1; min-width: 0; }
+.row .ti { font-size: 13.5px; }
+.row .su { font-size: 12px; color: var(--text-2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .su.err { color: var(--rec); }
+.disk { width: 180px; }
+.disk .bar { height: 6px; border-radius: 6px; background: var(--surface-3); overflow: hidden; }
+.disk .bar i { display: block; height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, var(--accent), #6f8bff); box-shadow: 0 0 10px var(--accent-glow); transition: width 1.4s var(--ease); }
+.disk .lbl { font-size: 11px; color: var(--text-2); margin-top: 5px; text-align: right; }
+.notice { display: flex; gap: 12px; padding: 14px 16px; border-radius: 12px; font-size: 12.5px; line-height: 1.65; color: var(--text-2);
+  background: color-mix(in srgb, var(--warn) 8%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.notice svg { color: var(--warn); flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 8px; padding: 12px; }
+.app-chip { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; background: var(--surface); border: 1px solid var(--stroke); font-size: 12.5px; }
+.app-chip .b { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 700; flex: none; }
+.app-chip .x { margin-left: auto; opacity: 0; color: var(--text-3); transition: .2s; font-size: 12px; }
+.app-chip:hover .x { opacity: 1; }
+.app-chip.add { border-style: dashed; color: var(--text-2); justify-content: center; cursor: pointer; }
+.app-chip.add:hover { border-color: var(--accent); color: var(--accent); }
+.app-chip.new { animation: pop .5s var(--spring); }
+
+.keycombo { display: flex; gap: 4px; padding: 4px; border-radius: 9px; border: 1px solid var(--stroke-strong); background: var(--surface); min-width: 120px; justify-content: center; cursor: pointer; transition: .2s; }
+.keycombo:hover { border-color: var(--accent); }
+.keycombo kbd { font-family: var(--mono); font-size: 12px; min-width: 24px; height: 24px; display: grid; place-items: center; padding: 0 6px; border-radius: 6px;
+  background: var(--surface-3); border: 1px solid var(--stroke-strong); border-bottom-width: 2px; }
+.keycombo.recording { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 0 20px var(--accent-glow); animation: kpulse 1.2s infinite; }
+.keycombo.recording span { font-size: 12px; color: var(--accent); padding: 4px 6px; }
+@keyframes kpulse { 50% { box-shadow: 0 0 0 5px var(--accent-soft), 0 0 30px var(--accent-glow); } }
+
+.about-hero { text-align: center; padding: 20px 0 10px; }
+.about-hero .logo-wrap { position: relative; width: 120px; height: 120px; margin: 0 auto 18px; display: grid; place-items: center; }
+.about-hero .logo-wrap::before { content: ""; position: absolute; inset: -6px; border-radius: 34px;
+  background: conic-gradient(from var(--ang), var(--accent), #6f8bff, var(--rec), var(--warn), var(--accent)); filter: blur(18px); opacity: .7; animation: spin 6s linear infinite; }
+.about-hero .logo { position: relative; }
+.about-hero h3 { font-size: 30px; font-weight: 700; margin: 0; }
+.about-hero .ver { display: inline-flex; gap: 6px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--text-2); }
+.about-hero .beta { padding: 2px 8px; border-radius: 999px; background: linear-gradient(90deg, var(--accent), #6f8bff); color: var(--accent-ink); font-weight: 700; font-size: 10.5px; }
+.features { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 22px 0; }
+.feature { padding: 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--stroke); transition: .35s var(--ease); transform-style: preserve-3d; }
+.feature:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--stroke)); }
+.feature svg { width: 22px; height: 22px; color: var(--accent); }
+.feature b { display: block; margin: 10px 0 4px; font-size: 13.5px; }
+.feature span { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+.about-links { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+/* =========================================================
+   05 首次引导
+   ========================================================= */
+.onb { width: 520px; margin: 0 auto; padding: 36px 36px 28px; text-align: center; }
+.onb h3 { font-size: 24px; margin: 18px 0 6px; }
+.onb .lead { color: var(--text-2); font-size: 13px; margin: 0 0 24px; }
+.steps { display: grid; gap: 10px; text-align: left; }
+.step { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--stroke); transition: .4s var(--ease); }
+.step .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface-3); color: var(--text-2); transition: .4s var(--spring); flex: none; }
+.step.done { border-color: color-mix(in srgb, var(--accent) 45%, var(--stroke)); background: var(--accent-soft); }
+.step.done .num { background: var(--accent); color: var(--accent-ink); transform: rotate(360deg); box-shadow: 0 0 16px var(--accent-glow); }
+.step .ti { font-size: 14px; font-weight: 600; } .step .su { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.step .btn { margin-left: auto; }
+.step.done .btn { pointer-events: none; background: transparent; border-color: transparent; color: var(--accent); }
+.onb .progress { height: 4px; border-radius: 4px; background: var(--surface-3); margin: 22px 0 18px; overflow: hidden; }
+.onb .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), #6f8bff); transition: width .6s var(--ease); box-shadow: 0 0 10px var(--accent-glow); }
+.confetti { position: fixed; pointer-events: none; z-index: 100; width: 8px; height: 12px; border-radius: 2px; }
+
+/* =========================================================
+   06 设计规范
+   ========================================================= */
+.tokens { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+.tokens .win { padding: 22px; }
+.tokens h4 { margin: 0 0 14px; font-size: 13px; color: var(--text-2); font-weight: 600; letter-spacing: .06em; }
+.swatches { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.sw { border-radius: 10px; overflow: hidden; border: 1px solid var(--stroke); background: var(--surface-2); cursor: pointer; transition: .25s var(--ease); }
+.sw:hover { transform: translateY(-3px); }
+.sw .c { height: 54px; }
+.sw .l { padding: 7px 9px; font-size: 11px; } .sw .l b { display: block; font-weight: 600; } .sw .l span { color: var(--text-2); font-family: var(--mono); }
+.type-row { display: flex; align-items: baseline; justify-content: space-between; padding: 9px 0; border-bottom: 1px dashed var(--stroke); }
+.type-row span { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
+.principles { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 20px; }
+.principles .win { padding: 18px; }
+.principles b { display: block; font-size: 14px; margin-bottom: 6px; } .principles p { margin: 0; font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+.principles .n { font-family: var(--mono); color: var(--accent); font-size: 12px; }
+
+/* =========================================================
+   06 招牌动效 Signature Motion
+   ========================================================= */
+.motion-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.mcard { padding: 0; display: flex; flex-direction: column; }
+.mcard .stagebox { height: 210px; position: relative; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(260px 160px at 50% 45%, var(--accent-soft), transparent 70%), var(--surface-2); border-bottom: 1px solid var(--stroke); }
+.mcard .cap { padding: 14px 16px 16px; display: flex; gap: 10px; align-items: flex-start; }
+.mcard .cap .n { font-family: var(--mono); color: var(--accent); font-size: 11px; margin-top: 2px; }
+.mcard .cap b { font-size: 14px; display: block; margin-bottom: 3px; }
+.mcard .cap span { font-size: 12px; color: var(--text-2); line-height: 1.55; }
+.mcard .cap .meta { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); margin-top: 6px; display: block; }
+.mcard .replay { position: absolute; right: 10px; top: 10px; z-index: 5; font-size: 11px; padding: 4px 9px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--stroke-strong); color: var(--text-2); opacity: 0; transition: .2s; }
+.mcard:hover .replay { opacity: 1; }
+.mcard.wide { grid-column: span 2; }
+
+/* M1 启动：鱼游入 */
+.m1 { width: 110px; height: 110px; border-radius: 30px; display: grid; place-items: center; position: relative;
+  background: linear-gradient(145deg, #3DDBD9, #1b8fa8 60%, #213a6b); box-shadow: 0 0 40px rgba(61,219,217,.4);
+  animation: m1box 4.5s var(--ease) infinite; }
+.m1 .bars { display: flex; gap: 7px; align-items: center; height: 56px; }
+.m1 .bars i { width: 7px; border-radius: 4px; background: #062B2B; transform-origin: center; animation: m1bar 4.5s var(--spring) infinite; }
+.m1 .bars i:nth-child(1){height:10px;animation-delay:.05s}.m1 .bars i:nth-child(2){height:32px;animation-delay:.12s}
+.m1 .bars i:nth-child(3){height:52px;animation-delay:.19s}.m1 .bars i:nth-child(4){height:36px;animation-delay:.26s}.m1 .bars i:nth-child(5){height:18px;animation-delay:.33s}
+.m1 .tail { width: 0; height: 0; border-top: 11px solid transparent; border-bottom: 11px solid transparent; border-left: 14px solid #062B2B;
+  transform: scaleX(-1); margin-left: 3px; transform-origin: left center; animation: m1tail 4.5s var(--ease) infinite; }
+@keyframes m1box { 0% { transform: scale(.4) rotate(-20deg); opacity: 0; filter: blur(8px); } 14% { transform: scale(1.06) rotate(3deg); opacity: 1; filter: none; }
+  22%,86% { transform: none; opacity: 1; } 100% { transform: scale(.9); opacity: 0; } }
+@keyframes m1bar { 0%,12% { transform: scaleY(0); } 24% { transform: scaleY(1); } 34% { transform: scaleY(.45); } 44% { transform: scaleY(1.1); } 54% { transform: scaleY(.7); } 64%,100% { transform: scaleY(1); } }
+@keyframes m1tail { 0%,28% { transform: scaleX(-1) translateX(20px); opacity: 0; } 38% { transform: scaleX(-1) rotate(0); opacity: 1; }
+  46% { transform: scaleX(-1) rotate(22deg); } 54% { transform: scaleX(-1) rotate(-22deg); } 62%,100% { transform: scaleX(-1) rotate(0); opacity: 1; } }
+
+/* M2 录音按钮变形 */
+.m2 { position: relative; width: 84px; height: 84px; display: grid; place-items: center; }
+.m2 .core { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; position: relative; z-index: 2; animation: m2core 4s var(--ease) infinite; }
+.m2 .glyph { width: 26px; height: 26px; background: #fff; animation: m2glyph 4s var(--spring) infinite; }
+.m2 .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--rec); opacity: 0; animation: m2ring 4s ease-out infinite; }
+.m2 .ring:nth-child(2) { animation-delay: .5s; } .m2 .ring:nth-child(3) { animation-delay: 1s; }
+@keyframes m2core { 0%,20% { background: var(--accent); box-shadow: 0 0 30px var(--accent-glow); transform: scale(1); }
+  24% { transform: scale(.88); } 32% { transform: scale(1.04); background: var(--rec); box-shadow: 0 0 40px var(--rec-glow); }
+  36%,78% { background: var(--rec); box-shadow: 0 0 40px var(--rec-glow); transform: scale(1); }
+  82% { transform: scale(.9); } 92%,100% { background: var(--accent); box-shadow: 0 0 30px var(--accent-glow); transform: scale(1); } }
+@keyframes m2glyph { 0%,24% { border-radius: 50%; width: 26px; height: 26px; } 34%,80% { border-radius: 6px; width: 24px; height: 24px; } 92%,100% { border-radius: 50%; width: 26px; height: 26px; } }
+@keyframes m2ring { 0%,30% { transform: scale(1); opacity: 0; } 32% { opacity: .9; } 60% { transform: scale(1.9); opacity: 0; } 100% { opacity: 0; } }
+
+/* M3 灵动岛变形 */
+.m3 { position: relative; width: 240px; height: 170px; }
+.m3 .isl { position: absolute; right: 0; top: 0; background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--stroke-strong);
+  box-shadow: 0 20px 40px -12px rgba(0,0,0,.5); overflow: hidden; animation: m3isl 5s var(--spring) infinite; }
+.m3 .pl { position: absolute; left: 12px; top: 10px; display: flex; align-items: center; gap: 8px; animation: m3pl 5s var(--ease) infinite; }
+.m3 .pl .d { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); box-shadow: 0 0 8px var(--rec); }
+.m3 .pl .w { display: flex; gap: 2px; align-items: center; } .m3 .pl .w i { width: 3px; border-radius: 2px; background: var(--accent); animation: m7b 1s ease-in-out infinite alternate; }
+.m3 .nt { position: absolute; inset: 12px; opacity: 0; animation: m3nt 5s var(--ease) infinite; }
+.m3 .nt .h { height: 12px; width: 60%; border-radius: 4px; background: var(--text); opacity: .8; margin-bottom: 12px; }
+.m3 .nt .l { height: 8px; border-radius: 4px; background: var(--text-3); margin-bottom: 8px; transform-origin: left; animation: m3line 5s var(--ease) infinite; }
+.m3 .nt .l b { display: inline-block; width: 26px; height: 8px; border-radius: 3px; background: var(--accent); vertical-align: top; }
+.m3 .nt .tb { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; }
+.m3 .nt .tb i { width: 22px; height: 22px; border-radius: 6px; background: var(--surface-3); } .m3 .nt .tb i:nth-child(2) { background: var(--rec); opacity: .8; }
+@keyframes m3isl { 0%,18% { width: 150px; height: 30px; border-radius: 15px; } 34%,72% { width: 240px; height: 170px; border-radius: 16px; } 88%,100% { width: 150px; height: 30px; border-radius: 15px; } }
+@keyframes m3pl { 0%,18% { opacity: 1; transform: none; } 24%,82% { opacity: 0; transform: scale(.8); } 90%,100% { opacity: 1; transform: none; } }
+@keyframes m3nt { 0%,28% { opacity: 0; transform: translateY(6px); } 38%,70% { opacity: 1; transform: none; } 76%,100% { opacity: 0; } }
+@keyframes m3line { 0%,36% { transform: scaleX(0); } 50%,100% { transform: scaleX(1); } }
+
+/* M4 会议检测声纳 */
+.m4 { position: relative; width: 240px; height: 170px; display: grid; place-items: center; }
+.m4 .ic { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg,#2D8CFF,#0B5CD5); color: #fff; font-weight: 800; display: grid; place-items: center; z-index: 2; animation: m4ic 4s var(--spring) infinite; }
+.m4 .sonar { position: absolute; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: m4s 4s ease-out infinite; }
+.m4 .sonar:nth-child(2) { animation-delay: .3s; } .m4 .sonar:nth-child(3) { animation-delay: .6s; }
+.m4 .bn { position: absolute; left: 20px; right: 20px; bottom: 10px; padding: 8px 10px; border-radius: 10px; font-size: 11.5px; display: flex; gap: 8px; align-items: center;
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); animation: m4bn 4s var(--spring) infinite; }
+.m4 .bn i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+@keyframes m4ic { 0%,10% { transform: scale(.6); opacity: .3; } 18% { transform: scale(1.15); opacity: 1; } 26%,100% { transform: scale(1); opacity: 1; } }
+@keyframes m4s { 0%,15% { transform: scale(1); opacity: 0; } 17% { opacity: .9; } 55% { transform: scale(4); opacity: 0; } 100% { opacity: 0; } }
+@keyframes m4bn { 0%,35% { transform: translateY(60px); opacity: 0; } 45%,85% { transform: none; opacity: 1; } 95%,100% { transform: translateY(60px); opacity: 0; } }
+
+/* M5 保存完成：波形 → 文件 → 飞入文件夹 */
+.m5 { position: relative; width: 260px; height: 170px; }
+.m5 .wv { position: absolute; left: 20px; top: 60px; display: flex; gap: 4px; align-items: center; height: 50px; animation: m5wv 5s var(--ease) infinite; }
+.m5 .wv i { width: 5px; border-radius: 3px; background: var(--rec); animation: m7b .6s ease-in-out infinite alternate; }
+.m5 .file { position: absolute; left: 40px; top: 50px; width: 52px; height: 66px; border-radius: 8px; background: var(--surface); border: 1px solid var(--stroke-strong);
+  display: grid; place-items: center; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--accent); box-shadow: 0 10px 24px -8px rgba(0,0,0,.5);
+  animation: m5file 5s cubic-bezier(.5,0,.3,1) infinite; }
+.m5 .file::before { content: ""; position: absolute; right: -1px; top: -1px; width: 14px; height: 14px; background: var(--surface-3); border-radius: 0 8px 0 6px; }
+.m5 .file.md { color: var(--text-2); animation-name: m5file2; }
+.m5 .fold { position: absolute; right: 20px; top: 56px; width: 76px; height: 58px; color: var(--accent); animation: m5fold 5s var(--spring) infinite; }
+.m5 .fold svg { width: 100%; height: 100%; filter: drop-shadow(0 0 12px var(--accent-glow)); }
+.m5 .ok { position: absolute; right: 12px; top: 44px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font-weight: 800; font-size: 14px; animation: m5ok 5s var(--spring) infinite; }
+@keyframes m5wv { 0%,25% { transform: scaleX(1); opacity: 1; } 34% { transform: scaleX(.1); opacity: 1; } 36%,100% { opacity: 0; } }
+@keyframes m5file { 0%,33% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.1); opacity: 1; } 46% { transform: scale(1); }
+  66% { transform: translate(140px,-30px) rotate(12deg) scale(.5); opacity: 1; } 70%,100% { transform: translate(150px,0) scale(.2); opacity: 0; } }
+@keyframes m5file2 { 0%,36% { transform: scale(0); opacity: 0; } 43% { transform: translate(34px,10px) scale(1.1); opacity: 1; } 50% { transform: translate(34px,10px) scale(1); }
+  70% { transform: translate(140px,-20px) rotate(18deg) scale(.5); opacity: 1; } 74%,100% { transform: translate(150px,0) scale(.2); opacity: 0; } }
+@keyframes m5fold { 0%,66% { transform: scale(1); } 71% { transform: scale(1.18) rotate(-4deg); } 78%,100% { transform: scale(1); } }
+@keyframes m5ok { 0%,74% { transform: scale(0); } 82% { transform: scale(1.25); } 88%,94% { transform: scale(1); } 100% { transform: scale(0); } }
+
+/* M6 标记冲击波 + 截屏快门 */
+.m6 { position: relative; width: 260px; height: 170px; display: flex; align-items: center; justify-content: space-around; }
+.m6 .fl { position: relative; width: 60px; height: 60px; display: grid; place-items: center; }
+.m6 .fl .b { width: 48px; height: 48px; border-radius: 12px; background: var(--surface); border: 1px solid var(--stroke-strong); display: grid; place-items: center; color: var(--warn); z-index: 2; animation: m6b 3s var(--spring) infinite; }
+.m6 .fl .b svg { width: 22px; height: 22px; }
+.m6 .fl .w { position: absolute; width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--warn); opacity: 0; animation: m6w 3s ease-out infinite; }
+.m6 .fl .w:nth-child(2) { animation-delay: .12s; }
+.m6 .fl .chip { position: absolute; top: -14px; font-family: var(--mono); font-size: 10.5px; padding: 2px 7px; border-radius: 5px; background: var(--warn); color: #2a1d00; font-weight: 700; animation: m6c 3s var(--spring) infinite; }
+.m6 .sh { position: relative; width: 96px; height: 64px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, var(--wall-a), var(--wall-c)); }
+.m6 .sh .br { position: absolute; inset: 6px; border: 2px solid var(--accent); border-radius: 6px;
+  -webkit-mask: conic-gradient(#000 0 25%, transparent 0 50%, #000 0 75%, transparent 0) 0 0 / 50% 50%; animation: m6br 3s var(--spring) infinite; }
+.m6 .sh .fx { position: absolute; inset: 0; background: #fff; opacity: 0; animation: m6fx 3s ease-out infinite; }
+@keyframes m6b { 0%,15% { transform: scale(1); } 19% { transform: scale(.82); } 26% { transform: scale(1.12); } 34%,100% { transform: scale(1); } }
+@keyframes m6w { 0%,20% { transform: scale(1); opacity: 0; } 21% { opacity: 1; } 55% { transform: scale(3.2); opacity: 0; } 100% { opacity: 0; } }
+@keyframes m6c { 0%,22% { transform: translateY(10px) scale(.4); opacity: 0; } 30% { transform: translateY(-4px) scale(1.05); opacity: 1; } 36%,70% { transform: none; opacity: 1; } 80%,100% { opacity: 0; transform: translateY(-8px); } }
+@keyframes m6br { 0%,50% { transform: scale(1.35); opacity: 0; } 60% { transform: scale(1); opacity: 1; } 72%,100% { transform: scale(1); opacity: 0; } }
+@keyframes m6fx { 0%,62% { opacity: 0; } 64% { opacity: .9; } 80%,100% { opacity: 0; } }
+
+/* M7 暂停：波形排空 */
+.m7 { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.m7 .bars { display: flex; gap: 4px; align-items: center; height: 60px; }
+.m7 .bars i { width: 5px; border-radius: 3px; background: var(--accent); animation: m7b .5s ease-in-out infinite alternate, m7c 4s linear infinite; }
+.m7 .st { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text-2); }
+.m7 .st i { width: 8px; height: 8px; border-radius: 50%; animation: m7dot 4s steps(1) infinite; }
+.m7 .st span::after { content: "录音中"; animation: m7txt 4s steps(1) infinite; }
+@keyframes m7b { from { transform: scaleY(.25); } to { transform: scaleY(1); } }
+@keyframes m7c { 0%,45% { background: var(--accent); height: 100%; } 55%,90% { background: var(--text-3); height: 4px; } 100% { background: var(--accent); height: 100%; } }
+@keyframes m7dot { 0% { background: var(--rec); box-shadow: 0 0 8px var(--rec); } 50% { background: var(--warn); box-shadow: 0 0 8px var(--warn); } }
+@keyframes m7txt { 0% { content: "录音中"; } 50% { content: "已暂停"; } }
+
+/* motion spec table */
+.mspec { margin-top: 16px; padding: 18px 20px; }
+.mspec table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.mspec th { text-align: left; color: var(--text-3); font-weight: 600; font-size: 11px; letter-spacing: .06em; padding: 0 10px 10px; }
+.mspec td { padding: 10px; border-top: 1px solid var(--stroke); color: var(--text-2); vertical-align: middle; }
+.mspec td:first-child { color: var(--text); font-weight: 550; }
+.mspec code { font-family: var(--mono); font-size: 11.5px; color: var(--accent); }
+.curve { width: 64px; height: 30px; }
+.curve path { fill: none; stroke: var(--accent); stroke-width: 2; }
+.curve .dotm { fill: var(--accent); }
+
+/* 主题切换：圆形揭示 */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { z-index: 999; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+
+footer { text-align: center; color: var(--text-3); font-size: 12px; padding: 60px 0 50px; }
+
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+.toast-copy { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); opacity: 0; padding: 8px 14px; border-radius: 999px;
+  background: var(--text); color: var(--bg); font-size: 12px; transition: .3s var(--ease); z-index: 200; }
+.toast-copy.show { opacity: 1; transform: translateX(-50%); }
+</style>
+</head>
+<body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="grain"></div>
+
+<!-- SVG sprite -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-fish" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 12h1M6.5 8.5v7M10 6v12M13.5 8v8M17 10v4"/><path fill="currentColor" d="M18.5 12l3.5-3v6z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 10v4M8 6v12M12 9v6M16 4v16M20 10v4"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></g></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></g></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 20l6-6M4 20v-5M4 20h5M20 4l-6 6M20 4v5M20 4h-5"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M10 14l-6 6M10 14v5M10 14H5M14 10l6-6M14 10V5M14 10h5"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.5v13l11-6.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-shot" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></g></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></g></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></g></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-offline" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01M3 3l18 18"/></g></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0M3 3l18 18"/></g></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></g></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-dock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 16h10"/></g></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></g></symbol>
+  <symbol id="i-disk" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></g></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></g></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6 8.5-6"/></g></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l2-6 4 12 2-6h6"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-widget" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="8" width="18" height="8" rx="4"/><circle cx="7.5" cy="12" r="1.3" fill="currentColor"/></g></symbol>
+</svg>
+
+<header class="topnav">
+  <div class="brand"><div class="logo"><svg style="color:#062B2B"><use href="#i-fish"/></svg></div>知鱼录音 <span style="color:var(--text-3);font-weight:400;font-size:12px">UI 原型 v2</span></div>
+  <nav>
+    <a href="#s1">菜单栏</a><a href="#s2">录音浮窗</a><a href="#s3">会议提醒</a><a href="#s4">偏好设置</a><a href="#s5">首次引导</a><a href="#s6">招牌动效</a><a href="#s7">设计规范</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="theme-switch" id="themeSwitch">
+    <button data-t="dark" class="on">深色</button><button data-t="light">浅色</button>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="logo xl" style="margin:0 auto"><svg style="color:#062B2B"><use href="#i-fish"/></svg></div>
+  <h1>会议，留在本机。</h1>
+  <p>知鱼录音新设计语言 · 深色专业。青色是“正在工作的声音”，红色只属于“正在录音”——整套界面只有这两种强调色。</p>
+  <div class="pills">
+    <span class="tag"><b></b>零联网</span><span class="tag"><b></b>深 / 浅双主题</span><span class="tag"><b></b>全部可交互</span>
+    <span class="tag">快捷键 <kbd class="k">⌥⌘R</kbd> <kbd class="k">⌥⌘M</kbd> <kbd class="k">⌥⌘S</kbd></span>
+  </div>
+</div>
+
+<!-- ============ 01 ============ -->
+<section class="stage reveal" id="s1">
+  <div class="stage-head"><span class="idx">01</span><h2>菜单栏弹窗</h2><p>点菜单栏图标开/关。开始录音后：顶部波形实时跳动、边框流光、状态点呼吸。</p></div>
+  <div class="desktop" id="desktop">
+    <div class="menubar">
+      <span class="mi">􀙇</span><span class="mi">􀊫</span>
+      <div class="status-icon active" id="statusIcon"><svg><use href="#i-fish"/></svg><span class="dot" id="statusDot"></span></div>
+      <span class="mi">􀛨</span><span class="mi mono" id="clock">周三 14:32</span>
+    </div>
+
+    <div class="popover win glass spot" id="popover">
+      <div class="pop-head">
+        <div class="logo"><svg style="color:#062B2B"><use href="#i-fish"/></svg></div>
+        <div><div class="name">知鱼录音</div><div class="sub"><i></i>本地 · 离线运行</div></div>
+        <div class="icons">
+          <button class="icon-btn" title="打开录音文件夹"><svg><use href="#i-folder"/></svg></button>
+          <button class="icon-btn" title="偏好设置" onclick="location.hash='#s4'"><svg><use href="#i-gear"/></svg></button>
+        </div>
+      </div>
+      <div class="detect-banner hidden" id="detectBanner"><span class="ping"></span><span>检测到 <b>Zoom</b> 开始使用麦克风</span></div>
+      <div class="rec-hero">
+        <canvas id="popWave"></canvas>
+        <div class="row">
+          <div><div class="timer mono" id="popTimer">00:00:00</div><div class="state"><i></i><span id="popState">待命中</span></div></div>
+          <div style="display:grid;gap:6px;justify-items:end">
+            <div style="display:flex;gap:6px;align-items:center;font-size:10px;color:var(--text-2)"><svg width="12" height="12"><use href="#i-mic"/></svg><div class="meter" data-meter="mic"></div></div>
+            <div style="display:flex;gap:6px;align-items:center;font-size:10px;color:var(--text-2)"><svg width="12" height="12"><use href="#i-speaker"/></svg><div class="meter" data-meter="sys"></div></div>
+          </div>
+        </div>
+      </div>
+      <button class="record-btn" id="recordBtn"><span class="shine"></span><span class="glyph"></span><span id="recordLabel">开始录音</span></button>
+      <div class="recent" id="recent">
+        <div class="recent-head" onclick="this.parentElement.classList.toggle('collapsed')"><span>最近录音</span><svg class="chev" width="14" height="14"><use href="#i-chev"/></svg></div>
+        <div class="recent-list" id="recentList"></div>
+      </div>
+      <div class="pop-foot"><svg width="12" height="12"><use href="#i-shield"/></svg>开始录音即代表你确认所有参会者均已获悉本次会议将被录音</div>
+    </div>
+  </div>
+  <div class="hint">试试：点「开始录音」或按 <kbd>⌥⌘R</kbd>；点 <a href="#s3" style="color:var(--accent)">03 会议提醒</a> 里的“模拟检测”看横幅出现。</div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section class="stage reveal" id="s2">
+  <div class="stage-head"><span class="idx">02</span><h2>录音浮窗</h2><p>从竖条改为“灵动岛”胶囊，点展开键弹性变形为笔记窗。回车记一条，带时间戳。</p></div>
+  <div class="widget-stage" id="widgetStage">
+    <div class="fake-meeting"><div>张三</div><div>李四</div><div>王五</div><div>共享屏幕</div><div>赵六</div><div>你</div></div>
+    <div class="idle-cta" id="idleCta">未在录音 — 浮窗只在录音时出现<br><br><button class="btn primary" onclick="toggleRecording()">开始一次模拟录音</button></div>
+    <div class="fw" id="fw" style="display:none">
+      <div class="flash" id="flash"></div>
+      <div class="pill">
+        <span class="rdot"></span>
+        <span class="timer mono" id="pillTimer">00:00</span>
+        <div class="wave" id="pillWave"></div>
+        <button class="expand" onclick="setExpanded(true)" title="展开笔记"><svg><use href="#i-expand"/></svg></button>
+      </div>
+      <div class="notes">
+        <div class="n-head">
+          <div class="meta"><span class="app">Zoom</span><span id="notesStarted">14:32 开始</span></div>
+          <div class="sp"></div>
+          <button class="icon-btn" title="更多"><svg><use href="#i-dots"/></svg></button>
+          <button class="icon-btn" title="收起" onclick="setExpanded(false)"><svg><use href="#i-collapse"/></svg></button>
+        </div>
+        <input class="n-title" placeholder="会议标题" value="">
+        <div class="n-body" id="nBody"></div>
+        <label class="n-input"><span class="ts-live" id="tsLive">+00:00</span><input id="noteInput" placeholder="随手记下你的灵感和重点，回车保存"></label>
+        <div class="ntool">
+          <button class="tbtn" id="pauseBtn" onclick="togglePause()"><svg><use href="#i-pause" id="pauseIcon"/></svg><span class="tip">暂停</span></button>
+          <button class="tbtn stop" onclick="toggleRecording()"><svg><use href="#i-stop"/></svg><span class="tip">停止并保存</span></button>
+          <div class="mid"><span class="rdot"></span><span class="mono" id="toolTimer">00:00:00</span><div class="meter" data-meter="mic"></div></div>
+          <button class="tbtn" onclick="addMark()"><svg><use href="#i-flag"/></svg><span class="tip">标记 ⌥⌘M</span></button>
+          <button class="tbtn" onclick="addShot()"><svg><use href="#i-shot"/></svg><span class="tip">截屏 ⌥⌘S</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hint">录音中按 <kbd>⌥⌘M</kbd> 打标记（金色冲击波）、<kbd>⌥⌘S</kbd> 截屏（白闪 + 缩略图），暂停时状态点变琥珀色。</div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section class="stage reveal" id="s3">
+  <div class="stage-head"><span class="idx">03</span><h2>会议检测提醒</h2><p>替代系统通知的浮动卡片：从右侧弹入，外圈倒计时环，20 秒后自动收起。</p></div>
+  <div class="prompt-stage">
+    <div style="position:absolute;left:28px;bottom:28px;display:flex;gap:8px">
+      <button class="btn primary" id="simDetect">模拟检测到 Zoom</button>
+      <button class="btn" id="simDetectChrome">模拟检测到 Chrome（仅提示）</button>
+    </div>
+    <div class="toast win glass out" id="toast">
+      <button class="x" onclick="hideToast()">✕</button>
+      <div class="ring">
+        <svg viewBox="0 0 52 52"><circle class="bg" cx="26" cy="26" r="24"/><circle class="fg" id="ringFg" cx="26" cy="26" r="24" stroke-dasharray="150.8" stroke-dashoffset="0"/></svg>
+        <div class="app-ic" id="toastIc">Z</div>
+      </div>
+      <div><h4>检测到会议，要开始录音吗？</h4><p id="toastMsg">检测到 Zoom 开始使用麦克风</p></div>
+      <div class="acts"><button class="btn primary" onclick="hideToast();if(!state.recording)toggleRecording()">开始录音</button><button class="btn ghost" onclick="hideToast()">忽略</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section class="stage reveal" id="s4">
+  <div class="stage-head"><span class="idx">04</span><h2>偏好设置</h2><p>分组卡片 + 图标行；侧栏选中指示器弹性滑动，页面切换带模糊渐入。</p></div>
+  <div class="win settings spot">
+    <aside class="side">
+      <div class="traffic"><i></i><i></i><i></i></div>
+      <div class="side-list" id="sideList">
+        <div class="side-ind" id="sideInd"></div>
+        <button class="side-item on" data-p="general"><svg><use href="#i-gear"/></svg>通用</button>
+        <button class="side-item" data-p="recording"><svg><use href="#i-wave"/></svg>录音</button>
+        <button class="side-item" data-p="shortcuts"><svg><use href="#i-key"/></svg>快捷键</button>
+        <button class="side-item" data-p="notify"><svg><use href="#i-bell"/></svg>通知</button>
+        <button class="side-item" data-p="about"><svg><use href="#i-info"/></svg>关于</button>
+      </div>
+      <div class="side-card"><div class="logo"><svg style="color:#062B2B"><use href="#i-fish"/></svg></div><div><div class="t">知鱼录音</div><div class="s"><i></i>本地 · 零联网</div></div></div>
+    </aside>
+
+    <div class="pane">
+      <!-- 通用 -->
+      <div class="page on" data-page="general">
+        <h3>通用</h3><p class="lead">启动方式、界面语言与录音存放位置。</p>
+        <div class="group-label">系统</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-power"/></svg></div><div class="txt"><div class="ti">开机时自动启动知鱼录音</div></div><div class="toggle on"></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-dock"/></svg></div><div class="txt"><div class="ti">在 Dock 中显示图标</div></div><div class="toggle"></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-globe"/></svg></div><div class="txt"><div class="ti">显示语言</div><div class="su">选择知鱼录音的界面语言</div></div>
+            <div class="select"><button>中文（简体）</button><ul><li class="sel"><span class="ck">✓</span>中文（简体）</li><li><span class="ck">✓</span>English</li></ul></div></div>
+        </div>
+        <div class="group-label">数据与存储</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-folder"/></svg></div><div class="txt"><div class="ti">录音保存路径</div><div class="su">~/Documents/知鱼录音</div></div><button class="btn">更改…</button></div>
+          <div class="row"><div class="ric"><svg><use href="#i-folder"/></svg></div><div class="txt"><div class="ti">在 Finder 中显示</div></div><button class="btn">打开</button></div>
+          <div class="row"><div class="ric"><svg><use href="#i-disk"/></svg></div><div class="txt"><div class="ti">磁盘占用</div><div class="su">42 条录音</div></div><div class="disk"><div class="bar"><i id="diskBar"></i></div><div class="lbl">1.8 GB / 可用 214 GB</div></div></div>
+        </div>
+        <div class="group-label">帮助与反馈</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-help"/></svg></div><div class="txt"><div class="ti">使用帮助</div></div><button class="btn">查看帮助</button></div>
+          <div class="row"><div class="ric"><svg><use href="#i-mail"/></svg></div><div class="txt"><div class="ti">反馈</div></div><button class="btn">发送邮件</button></div>
+          <div class="row"><div class="ric"><svg><use href="#i-pulse"/></svg></div><div class="txt"><div class="ti">应用诊断</div><div class="su">设置快照 + 最近 24 小时日志，仅导出到本地</div></div><button class="btn">导出诊断日志</button></div>
+        </div>
+      </div>
+
+      <!-- 录音 -->
+      <div class="page" data-page="recording">
+        <h3>录音</h3><p class="lead">会议识别、自动录制与音频输出。</p>
+        <div class="group-label">录音</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-bolt"/></svg></div><div class="txt"><div class="ti">自动录制</div><div class="su">在会议开始和结束时自动开启与停止录音</div></div><div class="toggle"></div></div>
+        </div>
+        <div class="group-label">录音快捷组件</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-widget"/></svg></div><div class="txt"><div class="ti">录音时显示快捷组件</div><div class="su">在桌面快速查看录音状态并进行操作</div></div><div class="toggle on"></div></div>
+        </div>
+        <div class="group-label">音频设置</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-mic"/></svg></div><div class="txt"><div class="ti">麦克风</div><div class="su">知鱼录音会自动选择合适的麦克风，确保录音清晰、不中断</div></div>
+            <div class="select"><button>智能选择</button><ul><li class="sel"><span class="ck">✓</span>智能选择</li><li><span class="ck">✓</span>MacBook Pro 麦克风</li><li><span class="ck">✓</span>AirPods Pro</li><li><span class="ck">✓</span>Shure MV7</li></ul></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-speaker"/></svg></div><div class="txt"><div class="ti">系统音频</div><div class="su">录制会议对方的声音</div></div><div class="toggle on"></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-wave"/></svg></div><div class="txt"><div class="ti">音频格式</div></div>
+            <div class="seg"><span class="thumb"></span><button class="on">单轨混音</button><button>双轨（左麦 右系统）</button></div></div>
+        </div>
+        <div class="group-label">会议识别 · 支持在以下应用中识别会议</div>
+        <div class="card"><div class="apps" id="apps"></div></div>
+        <div class="group-label">录音须知</div>
+        <div class="notice"><svg><use href="#i-warn"/></svg><div>录音前，请确保所有参会者均已获悉会议将被录音，且已根据各地适用法律的规定，获得了所需的同意。知鱼录音不会代你核实同意情况。</div></div>
+      </div>
+
+      <!-- 快捷键 -->
+      <div class="page" data-page="shortcuts">
+        <h3>快捷键</h3><p class="lead">点击组合键开始录制新快捷键；Esc 取消，⌫ 清除。</p>
+        <div class="group-label">全局快捷键</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-key"/></svg></div><div class="txt"><div class="ti">启用全局快捷键</div><div class="su">开启后，知鱼录音在后台运行时依然有效</div></div><div class="toggle on"></div></div>
+        </div>
+        <div class="group-label">操作</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-stop"/></svg></div><div class="txt"><div class="ti">开始 / 停止录音</div></div><div class="keycombo" data-combo="⌥⌘R"></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-flag"/></svg></div><div class="txt"><div class="ti">标记</div><div class="su">实时标记重要时刻，便于后续回顾</div></div><div class="keycombo" data-combo="⌥⌘M"></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-shot"/></svg></div><div class="txt"><div class="ti">截屏标记</div><div class="su">快速截取并保存会议中的画面</div></div><div class="keycombo" data-combo="⌥⌘S"></div></div>
+        </div>
+      </div>
+
+      <!-- 通知 -->
+      <div class="page" data-page="notify">
+        <h3>通知</h3><p class="lead">什么时候提醒你。</p>
+        <div class="group-label">通知</div>
+        <div class="card">
+          <div class="row"><div class="ric"><svg><use href="#i-bell"/></svg></div><div class="txt"><div class="ti">会议开始提醒</div><div class="su">会议开始时，主动询问是否开始录音</div></div><div class="toggle on"></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-stop"/></svg></div><div class="txt"><div class="ti">会议结束提醒</div><div class="su">检测到会议结束并自动停止录音时通知我</div></div><div class="toggle on"></div></div>
+          <div class="row"><div class="ric"><svg><use href="#i-folder"/></svg></div><div class="txt"><div class="ti">录音已保存提醒</div><div class="su">录音文件写入完成后提醒我查看</div></div><div class="toggle"></div></div>
+        </div>
+      </div>
+
+      <!-- 关于 -->
+      <div class="page" data-page="about">
+        <div class="about-hero">
+          <div class="logo-wrap"><div class="logo xl"><svg style="color:#062B2B"><use href="#i-fish"/></svg></div></div>
+          <h3>知鱼录音</h3>
+          <div class="ver"><span class="mono">v1.0.0</span><span class="beta">BETA</span><button class="btn ghost" style="height:24px;font-size:12px">检查更新</button></div>
+          <p style="color:var(--text-2);font-size:13px;margin:14px auto 0;max-width:420px;line-height:1.7">知鱼录音可在电脑上直接录制你的线上会议与会议纪要。</p>
+        </div>
+        <div class="features">
+          <div class="feature tilt"><svg><use href="#i-folder"/></svg><b>只存本机</b><span>所有录音和纪要只保存在你指定的本地文件夹</span></div>
+          <div class="feature tilt"><svg><use href="#i-offline"/></svg><b>不联网</b><span>没有云端、没有遥测、没有自动更新</span></div>
+          <div class="feature tilt"><svg><use href="#i-user"/></svg><b>无需账号</b><span>打开即用，不需要注册或登录</span></div>
+        </div>
+        <div class="about-links">
+          <button class="btn"><svg width="14" height="14"><use href="#i-folder"/></svg>打开录音文件夹</button>
+          <button class="btn">用户协议</button><button class="btn">隐私政策</button><button class="btn">第三方许可</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section class="stage reveal" id="s5">
+  <div class="stage-head"><span class="idx">05</span><h2>首次引导</h2><p>三步授权清单，进度条流动；全部完成时撒花。</p></div>
+  <div class="win glass onb spot" id="onb">
+    <div class="logo xl" style="margin:0 auto;width:72px;height:72px;border-radius:20px"><svg style="color:#062B2B"><use href="#i-fish"/></svg></div>
+    <h3>欢迎使用知鱼录音</h3>
+    <p class="lead">完成以下授权后即可开始录音</p>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><div><div class="ti">麦克风</div><div class="su">用于录制你自己的声音</div></div><button class="btn primary">授权</button></div>
+      <div class="step"><span class="num">2</span><div><div class="ti">系统音频录制</div><div class="su">用于录制会议对方的声音</div></div><button class="btn primary">授权</button></div>
+      <div class="step"><span class="num">3</span><div><div class="ti">通知</div><div class="su">会议开始时询问是否录音</div></div><button class="btn primary">授权</button></div>
+    </div>
+    <div class="progress"><i id="onbProg"></i></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button class="btn ghost" id="onbReset">重置演示</button>
+      <button class="btn primary" id="onbDone" style="opacity:.4;pointer-events:none">开始使用</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section class="stage reveal" id="s6">
+  <div class="stage-head"><span class="idx">06</span><h2>招牌动效</h2><p>让“知鱼”这个名字真的动起来。每个动效都循环播放，悬停可重播；右上角切换主题会触发圆形揭示。</p></div>
+  <div class="motion-grid" id="motionGrid">
+    <div class="win mcard spot"><div class="stagebox"><button class="replay">↻ 重播</button>
+      <div class="m1"><div class="bars"><i></i><i></i><i></i><i></i><i></i></div><div class="tail"></div></div></div>
+      <div class="cap"><span class="n">M1</span><div><b>鱼游入 · 启动 / 关于页</b><span>声波条依次弹起、跳动，最后鱼尾摆动两下。Logo 本身就是一段录音。</span><span class="meta">1.2s · spring · 仅首启 + 关于页</span></div></div></div>
+
+    <div class="win mcard spot"><div class="stagebox"><button class="replay">↻ 重播</button>
+      <div class="m2"><div class="core"><div class="glyph"></div></div><div class="ring"></div><div class="ring"></div><div class="ring"></div></div></div>
+      <div class="cap"><span class="n">M2</span><div><b>录音键变形</b><span>按下回弹 → 青变红，圆点弹性收成圆角方块（停止符号），同时向外发三圈脉冲。</span><span class="meta">0.45s · spring(0.4, 0.7)</span></div></div></div>
+
+    <div class="win mcard spot"><div class="stagebox"><button class="replay">↻ 重播</button>
+      <div class="m3"><div class="isl">
+        <div class="pl"><span class="d"></span><span class="mono" style="font-size:11px">12:04</span><span class="w"><i style="height:10px"></i><i style="height:16px;animation-delay:.2s"></i><i style="height:8px;animation-delay:.4s"></i><i style="height:14px;animation-delay:.1s"></i><i style="height:12px;animation-delay:.3s"></i><i style="height:6px;animation-delay:.5s"></i></span></div>
+        <div class="nt"><div class="h"></div><div class="l" style="width:90%"><b></b></div><div class="l" style="width:70%;animation-delay:.15s"><b></b></div><div class="l" style="width:80%;animation-delay:.3s"><b></b></div><div class="tb"><i></i><i></i><i></i></div></div>
+      </div></div></div>
+      <div class="cap"><span class="n">M3</span><div><b>灵动岛 ⇄ 笔记窗</b><span>右上角锚定，胶囊弹性长成卡片；内容延迟 150ms 淡入，笔记行逐条划出。</span><span class="meta">0.55s · spring · 锚点 top-right</span></div></div></div>
+
+    <div class="win mcard spot"><div class="stagebox"><button class="replay">↻ 重播</button>
+      <div class="m4"><span class="sonar"></span><span class="sonar"></span><span class="sonar"></span><div class="ic">Z</div><div class="bn"><i></i>检测到 Zoom 开始使用麦克风</div></div></div>
+      <div class="cap"><span class="n">M4</span><div><b>声纳 · 会议检测</b><span>识别到会议 App 时，图标弹一下并发出三圈声纳波，提示横幅从下方弹入。</span><span class="meta">0.9s · ease-out · 每次检测一次</span></div></div></div>
+
+    <div class="win mcard spot"><div class="stagebox"><button class="replay">↻ 重播</button>
+      <div class="m5">
+        <div class="wv"><i style="height:20px"></i><i style="height:40px;animation-delay:.1s"></i><i style="height:28px;animation-delay:.2s"></i><i style="height:48px;animation-delay:.05s"></i><i style="height:34px;animation-delay:.25s"></i><i style="height:18px;animation-delay:.15s"></i><i style="height:38px;animation-delay:.3s"></i><i style="height:24px;animation-delay:.12s"></i></div>
+        <div class="file">.m4a</div><div class="file md">.md</div>
+        <div class="fold"><svg viewBox="0 0 24 24"><use href="#i-folder"/></svg></div><div class="ok">✓</div>
+      </div></div>
+      <div class="cap"><span class="n">M5</span><div><b>保存 · 波形收进文件夹</b><span>停止后波形被“压”成 .m4a 和 .md 两张文件，沿弧线飞进文件夹，文件夹一跳、打勾。</span><span class="meta">1.4s · 曲线轨迹 · 停止录音时</span></div></div></div>
+
+    <div class="win mcard spot"><div class="stagebox"><button class="replay">↻ 重播</button>
+      <div class="m6">
+        <div class="fl"><span class="w"></span><span class="w"></span><div class="b"><svg><use href="#i-flag"/></svg></div><span class="chip">+12:34</span></div>
+        <div class="sh"><div class="br"></div><div class="fx"></div></div>
+      </div></div>
+      <div class="cap"><span class="n">M6</span><div><b>标记冲击波 · 截屏快门</b><span>⌥⌘M：金色冲击波 + 时间戳弹出；⌥⌘S：取景框收拢 + 白闪。按快捷键时有明确的“打卡感”。</span><span class="meta">0.35s / 0.5s · 快捷键触发</span></div></div></div>
+
+    <div class="win mcard spot"><div class="stagebox"><button class="replay">↻ 重播</button>
+      <div class="m7"><div class="bars"><i style="height:30px"></i><i style="height:50px;animation-delay:.1s"></i><i style="height:22px;animation-delay:.2s"></i><i style="height:56px;animation-delay:.05s"></i><i style="height:36px;animation-delay:.25s"></i><i style="height:44px;animation-delay:.15s"></i><i style="height:26px;animation-delay:.3s"></i><i style="height:40px;animation-delay:.12s"></i><i style="height:18px;animation-delay:.2s"></i></div>
+        <div class="st"><i></i><span></span></div></div></div>
+      <div class="cap"><span class="n">M7</span><div><b>暂停 · 声音排空</b><span>波形塌缩成一条灰线，状态点从呼吸的红变成静止的琥珀色；继续时再“充”回来。</span><span class="meta">0.4s · ease-out</span></div></div></div>
+
+    <div class="win mcard wide spot"><div class="stagebox" style="grid-template-columns:1fr 1fr;gap:20px;padding:0 30px">
+      <div style="text-align:left"><b style="font-size:18px">常驻的小动效</b><p style="color:var(--text-2);font-size:12.5px;line-height:1.7;margin:8px 0 0">录音中：状态点呼吸 1.6s、弹窗边框流光 3s、电平表 20fps。<br>待命：波形微弱“呼吸”，表示在听但没在录。<br>悬停：卡片跟随鼠标的青色聚光、关于页特性卡 3D 倾斜。<br>全部遵守系统“减弱动态效果”设置。</p></div>
+      <div style="display:grid;gap:12px;justify-items:center">
+        <button class="btn primary" id="themeDemo">切换主题 · 圆形揭示</button>
+        <span style="font-size:11px;color:var(--text-3)">从点击位置扩散（View Transitions）</span>
+      </div></div>
+      <div class="cap"><span class="n">M8</span><div><b>环境动效 + 主题揭示</b><span>在 SwiftUI 中对应 <code style="font-family:var(--mono);color:var(--accent)">.phaseAnimator</code> / <code style="font-family:var(--mono);color:var(--accent)">.keyframeAnimator</code> / <code style="font-family:var(--mono);color:var(--accent)">matchedGeometryEffect</code>，全部 macOS 14 可用。</span></div></div></div>
+  </div>
+
+  <div class="win mspec">
+    <table>
+      <tr><th>动效等级</th><th>曲线</th><th>时长</th><th>用在哪</th><th>SwiftUI 对应</th></tr>
+      <tr><td>微交互</td><td><svg class="curve" viewBox="0 0 64 30"><path d="M2 28 C 16 28, 20 2, 62 2"/></svg></td><td>150–200ms</td><td>按钮按下、悬停、开关</td><td><code>.easeOut(0.18)</code></td></tr>
+      <tr><td>状态切换</td><td><svg class="curve" viewBox="0 0 64 30"><path d="M2 28 C 24 28, 22 -8, 40 2 S 62 4, 62 4"/></svg></td><td>350–450ms</td><td>录音键变形、侧栏指示器、分段控件</td><td><code>.spring(response: 0.4, dampingFraction: 0.7)</code></td></tr>
+      <tr><td>窗口变形</td><td><svg class="curve" viewBox="0 0 64 30"><path d="M2 28 C 20 28, 24 -6, 42 2 S 62 3, 62 3"/></svg></td><td>550ms</td><td>灵动岛 ⇄ 笔记窗、弹窗出现</td><td><code>.spring(response: 0.55, dampingFraction: 0.75)</code></td></tr>
+      <tr><td>叙事动效</td><td><svg class="curve" viewBox="0 0 64 30"><path d="M2 28 C 14 2, 30 2, 62 2"/></svg></td><td>0.9–1.4s</td><td>启动、会议检测、保存完成</td><td><code>.keyframeAnimator</code></td></tr>
+      <tr><td>环境循环</td><td><svg class="curve" viewBox="0 0 64 30"><path d="M2 15 Q 17 0, 32 15 T 62 15"/></svg></td><td>1.6–3s ∞</td><td>呼吸点、流光边框、待命波形</td><td><code>.phaseAnimator</code> / <code>TimelineView</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 07 ============ -->
+<section class="stage reveal" id="s7">
+  <div class="stage-head"><span class="idx">07</span><h2>设计规范</h2><p>点击色块复制色值。所有颜色都是深 / 浅双值 token。</p></div>
+  <div class="tokens">
+    <div class="win"><h4>色彩</h4><div class="swatches" id="swatches"></div></div>
+    <div class="win"><h4>字体层级（SF Pro / 苹方 · 数字用 SF Mono）</h4>
+      <div class="type-row"><b style="font-size:30px;font-weight:700">会议标题</b><span>Display 30 / Bold</span></div>
+      <div class="type-row"><b style="font-size:22px;font-weight:650">页面标题</b><span>Title 22 / Semibold</span></div>
+      <div class="type-row"><span style="font-size:13.5px;color:var(--text);font-family:var(--font)">设置行标题</span><span>Body 13.5 / Regular</span></div>
+      <div class="type-row"><span style="font-size:12px;color:var(--text-2);font-family:var(--font)">说明文字与副标题</span><span>Caption 12 / text-2</span></div>
+      <div class="type-row"><span style="font-size:11px;letter-spacing:.08em;color:var(--text-3);font-weight:600;font-family:var(--font)">分组标签 GROUP</span><span>Overline 11 / +8%</span></div>
+      <div class="type-row"><span class="mono" style="font-size:24px;font-weight:300;color:var(--text)">01:23:45</span><span>Timer Mono 24 / Light</span></div>
+    </div>
+  </div>
+  <div class="principles">
+    <div class="win"><span class="n">P1</span><b>两种强调色</b><p>青 = 可操作 / 声音在流动；红 = 正在录音。其它一律中性灰阶。</p></div>
+    <div class="win"><span class="n">P2</span><b>卡片即分组</b><p>设置项按卡片分组，行内左图标 + 右控件，取代细分割线。</p></div>
+    <div class="win"><span class="n">P3</span><b>动效有意义</b><p>弹性只用于状态切换（开关、指示器、浮窗变形），呼吸 / 流光只在录音中出现。</p></div>
+    <div class="win"><span class="n">P4</span><b>圆角阶梯</b><p>6 控件内 · 10 按钮/卡片 · 14 窗口 · 20 浮窗 · 999 胶囊。</p></div>
+  </div>
+</section>
+
+<footer>知鱼录音 · UI 原型 · 仅供评审，不含任何网络请求</footer>
+<div class="toast-copy" id="copyToast">已复制</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- theme ---------- */
+function applyTheme(t, e) {
+  const doIt = () => {
+    document.documentElement.dataset.theme = t;
+    $$('#themeSwitch button').forEach(x => x.classList.toggle('on', x.dataset.t === t));
+    buildSwatches();
+  };
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return doIt();
+  const x = e ? e.clientX : innerWidth / 2, y = e ? e.clientY : 0;
+  const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  document.startViewTransition(doIt).ready.then(() => {
+    document.documentElement.animate({ clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+      { duration: 650, easing: 'cubic-bezier(.22,1,.36,1)', pseudoElement: '::view-transition-new(root)' });
+  });
+}
+$$('#themeSwitch button').forEach(b => b.onclick = e => { if (document.documentElement.dataset.theme !== b.dataset.t) applyTheme(b.dataset.t, e); });
+setTimeout(() => {
+  $('#themeDemo').onclick = e => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', e);
+  $$('.mcard .replay').forEach(b => b.onclick = () => {
+    const box = b.parentElement;
+    $$('*', box).forEach(el => el.getAnimations().forEach(a => { a.currentTime = 0; a.play(); }));
+  });
+});
+
+/* ---------- spotlight + reveal ---------- */
+document.addEventListener('pointermove', e => {
+  $$('.spot').forEach(el => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  });
+});
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add('in'); if (e.target.id === 's4') $('#diskBar').style.width = '38%'; }
+}), { threshold: .12 });
+$$('.reveal').forEach(el => io.observe(el));
+function revealCheck() { $$('.reveal:not(.in)').forEach(el => { const r = el.getBoundingClientRect(); if (r.top < innerHeight * .9 && r.bottom > 0) { el.classList.add('in'); if (el.id === 's4') $('#diskBar').style.width = '38%'; } }); }
+addEventListener('scroll', revealCheck, { passive: true }); addEventListener('load', revealCheck); setTimeout(revealCheck, 100);
+
+/* ---------- tilt ---------- */
+$$('.tilt').forEach(el => {
+  el.addEventListener('pointermove', e => {
+    const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+    el.style.transform = `perspective(600px) rotateY(${x * 14}deg) rotateX(${-y * 14}deg) translateZ(6px)`;
+  });
+  el.addEventListener('pointerleave', () => el.style.transform = '');
+});
+
+/* ---------- meters ---------- */
+const SEG = 7;
+$$('.meter').forEach(m => { for (let i = 0; i < SEG; i++) { const s = document.createElement('i'); s.style.height = (5 + i * 1.6) + 'px'; m.appendChild(s); } });
+function meterColor(i) { return i < 4 ? css('--accent') : i < 6 ? css('--warn') : css('--rec'); }
+function setMeter(kind, level) {
+  const lit = Math.round(level * SEG);
+  $$(`.meter[data-meter="${kind}"]`).forEach(m => [...m.children].forEach((s, i) => {
+    const on = i < lit; s.classList.toggle('lit', on);
+    s.style.background = on ? meterColor(i) : ''; s.style.color = on ? meterColor(i) : '';
+  }));
+}
+
+/* ---------- recording state ---------- */
+const state = { recording: false, paused: false, elapsed: 0, startedAt: null, mic: 0, sys: 0 };
+const fmt = (s, long = true) => { s = Math.floor(s); const h = String(Math.floor(s / 3600)).padStart(2, '0'), m = String(Math.floor(s / 60) % 60).padStart(2, '0'), ss = String(s % 60).padStart(2, '0'); return long ? `${h}:${m}:${ss}` : `${m}:${ss}`; };
+const offset = () => '+' + fmt(state.elapsed, false);
+
+function toggleRecording(e) {
+  state.recording = !state.recording;
+  if (state.recording) {
+    state.elapsed = 0; state.paused = false; state.startedAt = new Date();
+    $('#nBody').innerHTML = '';
+    addEntry('event', '开始录音 · 来源 Zoom');
+    $('#notesStarted').textContent = state.startedAt.toTimeString().slice(0, 5) + ' 开始';
+  } else {
+    addRecent();
+    setExpanded(false);
+  }
+  const btn = $('#recordBtn');
+  if (e && e.currentTarget === btn) {
+    const r = btn.getBoundingClientRect(), rp = document.createElement('span');
+    rp.className = 'ripple'; const d = Math.max(r.width, r.height);
+    Object.assign(rp.style, { width: d + 'px', height: d + 'px', left: (e.clientX - r.left - d / 2) + 'px', top: (e.clientY - r.top - d / 2) + 'px' });
+    btn.appendChild(rp); setTimeout(() => rp.remove(), 700);
+  }
+  render();
+}
+$('#recordBtn').addEventListener('click', toggleRecording);
+
+function togglePause() {
+  if (!state.recording) return;
+  state.paused = !state.paused;
+  addEntry('event', state.paused ? '已暂停' : '已继续');
+  render();
+}
+function render() {
+  const pop = $('#popover');
+  pop.classList.toggle('recording', state.recording);
+  $('#recordLabel').textContent = state.recording ? `停止录音  ${fmt(state.elapsed)}` : '开始录音';
+  $('#popState').textContent = state.recording ? (state.paused ? '已暂停' : '正在录音 · Zoom') : '待命中';
+  $('#statusDot').className = 'dot' + (state.recording ? ' show' : '');
+  const fw = $('#fw');
+  fw.style.display = state.recording ? '' : 'none';
+  fw.classList.toggle('paused', state.paused);
+  $('#idleCta').style.display = state.recording ? 'none' : '';
+  $('#pauseIcon').setAttribute('href', state.paused ? '#i-play' : '#i-pause');
+  $('#pauseBtn .tip').textContent = state.paused ? '继续' : '暂停';
+}
+function setExpanded(v) { $('#fw').classList.toggle('expanded', v); if (v) setTimeout(() => $('#noteInput').focus({ preventScroll: true }), 450); }
+
+/* ---------- notes ---------- */
+function addEntry(kind, text) {
+  const el = document.createElement('div');
+  el.className = 'entry ' + kind;
+  el.innerHTML = `<span class="ts">${offset()}</span><div class="tx"></div>`;
+  $('.tx', el).textContent = text;
+  if (kind === 'shot') { const t = document.createElement('div'); t.className = 'thumb'; t.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i>'; $('.tx', el).appendChild(t); }
+  $('#nBody').appendChild(el);
+  $('#nBody').scrollTop = 1e6;
+}
+$('#noteInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.value.trim()) { addEntry('note', e.target.value.trim()); e.target.value = ''; }
+});
+function addMark() {
+  if (!state.recording) return;
+  addEntry('mark', '🚩 标记');
+  const b = document.createElement('div'); b.className = 'mark-burst';
+  const fw = $('#fw'); b.style.left = (fw.offsetLeft + fw.offsetWidth - 110) + 'px'; b.style.top = (fw.offsetTop + fw.offsetHeight - 30) + 'px';
+  if (!fw.classList.contains('expanded')) { b.style.left = (fw.offsetLeft + 20) + 'px'; b.style.top = (fw.offsetTop + 23) + 'px'; }
+  $('#widgetStage').appendChild(b); setTimeout(() => b.remove(), 700);
+}
+function addShot() {
+  if (!state.recording) return;
+  const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+  addEntry('shot', '截图 ' + new Date().toTimeString().slice(0, 8).replaceAll(':', '-') + '.png');
+}
+
+/* ---------- hotkeys ---------- */
+let recordingCombo = null;
+document.addEventListener('keydown', e => {
+  if (recordingCombo) return;
+  if (e.altKey && e.metaKey) {
+    const k = e.code;
+    if (k === 'KeyR') { e.preventDefault(); toggleRecording(); }
+    if (k === 'KeyM') { e.preventDefault(); addMark(); }
+    if (k === 'KeyS') { e.preventDefault(); addShot(); }
+  }
+});
+
+/* ---------- popover toggle ---------- */
+$('#statusIcon').onclick = () => { $('#popover').classList.toggle('hidden'); $('#statusIcon').classList.toggle('active'); };
+
+/* ---------- recent ---------- */
+const recents = [
+  ['09-29 16:04 飞书', '52:18', '飞书'], ['09-29 10:30 腾讯会议', '1:12:05', '腾讯会议'], ['09-28 15:00 手动录音', '08:41', '手动'],
+];
+function sparkHTML() { return Array.from({ length: 14 }, () => `<i style="height:${3 + Math.random() * 15}px"></i>`).join(''); }
+function renderRecents() {
+  $('#recentList').innerHTML = recents.slice(0, 4).map(([t, d, a]) =>
+    `<div class="rec-item"><span class="play"><svg width="11" height="11"><use href="#i-play"/></svg></span><div><div class="t">${t}</div><div class="m mono">${d}</div></div><span class="spark">${sparkHTML()}</span><span class="app">${a}</span></div>`).join('');
+}
+function addRecent() {
+  const d = state.startedAt || new Date();
+  const p = n => String(n).padStart(2, '0');
+  recents.unshift([`${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())} Zoom`, fmt(state.elapsed, state.elapsed >= 3600), 'Zoom']);
+  renderRecents();
+  $('#recentList .rec-item').animate([{ background: css('--accent-soft'), transform: 'scale(.97)' }, { background: 'transparent', transform: 'none' }], { duration: 900, easing: 'ease-out' });
+}
+renderRecents();
+
+/* ---------- waveform canvas + pill bars ---------- */
+const cv = $('#popWave'), ctx = cv.getContext('2d');
+const hist = new Array(90).fill(0);
+const PILL_BARS = 22;
+for (let i = 0; i < PILL_BARS; i++) $('#pillWave').appendChild(document.createElement('i'));
+let t0 = performance.now(), acc = 0;
+function noise(t, f) { return (Math.sin(t * f) + Math.sin(t * f * 2.3 + 1) * .6 + Math.sin(t * f * 5.1 + 2) * .3) / 1.9; }
+function frame(now) {
+  const dt = (now - t0) / 1000; t0 = now;
+  const live = state.recording && !state.paused;
+  if (live) state.elapsed += dt;
+  const tt = now / 1000;
+  const talk = Math.max(0, noise(tt, .7)) ;
+  const targetMic = live ? Math.min(1, .15 + talk * .9 * Math.random() + .1) : 0;
+  const targetSys = live ? Math.min(1, .1 + Math.max(0, noise(tt + 9, .5)) * .8 * Math.random()) : 0;
+  state.mic += (targetMic - state.mic) * .25; state.sys += (targetSys - state.sys) * .25;
+  acc += dt;
+  if (acc > .05) {
+    acc = 0;
+    hist.push(live ? Math.max(state.mic, state.sys) : (state.recording ? .02 : .03 + Math.abs(Math.sin(tt * 2)) * .03)); hist.shift();
+    setMeter('mic', state.mic); setMeter('sys', state.sys);
+    $$('#pillWave i').forEach((b, i) => { const v = hist[hist.length - PILL_BARS + i] || 0; b.style.height = (2 + v * 26) + 'px'; });
+    if (state.recording) {
+      $('#recordLabel').textContent = `停止录音  ${fmt(state.elapsed)}`;
+    }
+  }
+  $('#popTimer').textContent = fmt(state.elapsed);
+  $('#pillTimer').textContent = fmt(state.elapsed, state.elapsed < 3600);
+  $('#toolTimer').textContent = fmt(state.elapsed);
+  $('#tsLive').textContent = offset();
+  drawWave();
+  requestAnimationFrame(frame);
+}
+function drawWave() {
+  const dpr = devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const col = state.recording ? css('--rec') : css('--accent');
+  const g = ctx.createLinearGradient(0, 0, w, 0);
+  g.addColorStop(0, 'transparent'); g.addColorStop(.25, col); g.addColorStop(1, col);
+  ctx.fillStyle = g; ctx.shadowColor = col; ctx.shadowBlur = state.recording ? 10 : 4;
+  const n = hist.length, bw = w / n;
+  for (let i = 0; i < n; i++) {
+    const v = hist[i], bh = Math.max(2, v * h * .95);
+    ctx.globalAlpha = .35 + .65 * (i / n);
+    ctx.beginPath(); ctx.roundRect(i * bw + 1, (h - bh) / 2, Math.max(1.5, bw - 2), bh, 1.5); ctx.fill();
+  }
+  ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+}
+requestAnimationFrame(frame);
+setInterval(() => { const d = new Date(); $('#clock').textContent = '周' + '日一二三四五六'[d.getDay()] + ' ' + d.toTimeString().slice(0, 5); }, 1000);
+
+/* ---------- prompt toast ---------- */
+let toastTimer = null;
+function showToast(app, ic, color, chrome) {
+  const t = $('#toast');
+  $('#toastMsg').textContent = `检测到 ${app} 开始使用麦克风` + (chrome ? ' · 浏览器会议仅提示' : '');
+  $('#toastIc').textContent = ic; $('#toastIc').style.background = color;
+  t.classList.remove('out');
+  $('#detectBanner').classList.remove('hidden'); $('#detectBanner span:last-child').innerHTML = `检测到 <b>${app}</b> 开始使用麦克风`;
+  let left = 20; const fg = $('#ringFg'); fg.style.transition = 'none'; fg.style.strokeDashoffset = 0;
+  clearInterval(toastTimer);
+  requestAnimationFrame(() => { fg.style.transition = ''; });
+  toastTimer = setInterval(() => { left--; fg.style.strokeDashoffset = 150.8 * (1 - left / 20); if (left <= 0) hideToast(); }, 1000);
+}
+function hideToast() { $('#toast').classList.add('out'); clearInterval(toastTimer); }
+$('#simDetect').onclick = () => showToast('Zoom', 'Z', 'linear-gradient(135deg,#2D8CFF,#0B5CD5)');
+$('#simDetectChrome').onclick = () => showToast('Chrome', 'C', 'linear-gradient(135deg,#34A853,#FBBC05 60%,#EA4335)', true);
+
+/* ---------- settings: sidebar ---------- */
+function moveInd() { const on = $('.side-item.on'); $('#sideInd').style.top = on.offsetTop + 'px'; }
+$$('.side-item').forEach(b => b.onclick = () => {
+  $$('.side-item').forEach(x => x.classList.toggle('on', x === b));
+  $$('.page').forEach(p => { const on = p.dataset.page === b.dataset.p; p.classList.toggle('on', on); p.classList.toggle('anim', on); });
+  moveInd(); layoutSegs();
+});
+requestAnimationFrame(moveInd);
+
+/* toggles */
+$$('.toggle').forEach(t => t.onclick = () => t.classList.toggle('on'));
+
+/* selects */
+$$('.select').forEach(s => {
+  $('button', s).onclick = e => { e.stopPropagation(); $$('.select.open').forEach(x => x !== s && x.classList.remove('open')); s.classList.toggle('open'); };
+  $$('li', s).forEach(li => li.onclick = () => {
+    $$('li', s).forEach(x => x.classList.toggle('sel', x === li));
+    $('button', s).textContent = li.textContent.replace('✓', ''); s.classList.remove('open');
+  });
+});
+document.addEventListener('click', () => $$('.select.open').forEach(s => s.classList.remove('open')));
+
+/* segmented */
+function layoutSegs() { $$('.seg').forEach(seg => { const on = $('button.on', seg), th = $('.thumb', seg); if (on && on.offsetWidth) { th.style.left = on.offsetLeft + 'px'; th.style.width = on.offsetWidth + 'px'; } }); }
+$$('.seg button').forEach(b => b.onclick = () => { $$('button', b.parentElement).forEach(x => x.classList.toggle('on', x === b)); layoutSegs(); });
+
+/* meeting apps */
+const apps = [['Zoom', '#2D8CFF'], ['腾讯会议', '#0A6CFF'], ['飞书', '#3370FF'], ['钉钉', '#1677FF'], ['Teams', '#5B5FC7'], ['Slack', '#611F69'], ['Discord', '#5865F2'], ['微信', '#07C160'], ['Webex', '#00A0D1'], ['Chrome', '#EA4335']];
+function renderApps(newIdx) {
+  $('#apps').innerHTML = apps.map(([n, c], i) => `<div class="app-chip${i === newIdx ? ' new' : ''}"><span class="b" style="background:${c}">${n[0]}</span>${n}<span class="x" data-i="${i}">✕</span></div>`).join('') + '<div class="app-chip add" id="addApp">＋ 添加应用…</div>';
+  $$('#apps .x').forEach(x => x.onclick = () => { apps.splice(+x.dataset.i, 1); renderApps(); });
+  $('#addApp').onclick = () => { const pool = [['Google Meet', '#00897B'], ['Lark', '#00D6B9'], ['FaceTime', '#34C759'], ['Skype', '#00AFF0']]; apps.push(pool[apps.length % pool.length]); renderApps(apps.length - 1); };
+}
+renderApps();
+
+/* shortcut recorder */
+function renderCombo(el) { el.classList.remove('recording'); const c = el.dataset.combo; el.innerHTML = c ? [...c].map(k => `<kbd>${k}</kbd>`).join('') : '<span style="color:var(--text-3);font-size:12px;padding:4px">点击录制</span>'; }
+$$('.keycombo').forEach(el => {
+  renderCombo(el);
+  el.onclick = e => {
+    e.stopPropagation();
+    if (recordingCombo) renderCombo(recordingCombo);
+    recordingCombo = el; el.classList.add('recording'); el.innerHTML = '<span>请按下快捷键…</span>';
+  };
+});
+document.addEventListener('keydown', e => {
+  if (!recordingCombo) return;
+  e.preventDefault();
+  const el = recordingCombo;
+  if (e.key === 'Escape') { recordingCombo = null; renderCombo(el); return; }
+  if (e.key === 'Backspace' || e.key === 'Delete') { el.dataset.combo = ''; recordingCombo = null; renderCombo(el); return; }
+  if (['Meta', 'Alt', 'Control', 'Shift'].includes(e.key)) return;
+  if (!(e.metaKey || e.altKey || e.ctrlKey)) return;
+  const mods = (e.ctrlKey ? '⌃' : '') + (e.altKey ? '⌥' : '') + (e.shiftKey ? '⇧' : '') + (e.metaKey ? '⌘' : '');
+  const key = e.code.startsWith('Key') ? e.code.slice(3) : e.code.startsWith('Digit') ? e.code.slice(5) : e.key.toUpperCase().slice(0, 3);
+  el.dataset.combo = mods + key; recordingCombo = null; renderCombo(el);
+  el.animate([{ transform: 'scale(1.08)' }, { transform: 'scale(1)' }], { duration: 350, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+}, true);
+document.addEventListener('click', () => { if (recordingCombo) { renderCombo(recordingCombo); recordingCombo = null; } });
+
+/* ---------- onboarding ---------- */
+function updateOnb() {
+  const done = $$('.step.done').length;
+  $('#onbProg').style.width = (done / 3 * 100) + '%';
+  const b = $('#onbDone'); b.style.opacity = done === 3 ? 1 : .4; b.style.pointerEvents = done === 3 ? 'auto' : 'none';
+  if (done === 3) confetti($('#onbDone'));
+}
+$$('.step .btn').forEach(b => b.onclick = () => {
+  b.textContent = '请求中…';
+  setTimeout(() => { b.closest('.step').classList.add('done'); b.closest('.step').querySelector('.num').textContent = '✓'; b.textContent = '已授权'; updateOnb(); }, 600);
+});
+$('#onbReset').onclick = () => { $$('.step').forEach((s, i) => { s.classList.remove('done'); $('.num', s).textContent = i + 1; $('.btn', s).textContent = '授权'; }); updateOnb(); };
+$('#onbDone').onclick = e => confetti(e.currentTarget);
+function confetti(anchor) {
+  const r = anchor.getBoundingClientRect(), cols = [css('--accent'), css('--rec'), css('--warn'), '#6f8bff', '#fff'];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div'); p.className = 'confetti'; p.style.background = cols[i % cols.length];
+    p.style.left = (r.left + r.width / 2) + 'px'; p.style.top = (r.top + r.height / 2) + 'px'; document.body.appendChild(p);
+    const a = Math.random() * Math.PI * 2, v = 120 + Math.random() * 260;
+    p.animate([{ transform: 'translate(0,0) rotate(0)', opacity: 1 },
+      { transform: `translate(${Math.cos(a) * v}px, ${Math.sin(a) * v + 260}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }],
+      { duration: 1200 + Math.random() * 800, easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = () => p.remove();
+  }
+}
+
+/* ---------- swatches ---------- */
+function buildSwatches() {
+  const list = [['主色 青', '--accent'], ['录音 红', '--rec'], ['警示 琥珀', '--warn'], ['背景', '--bg'], ['表面', '--surface'], ['表面 2', '--surface-2'], ['描边', '--stroke'], ['文字', '--text'], ['文字 2', '--text-2'], ['文字 3', '--text-3'], ['表面 3', '--surface-3'], ['强描边', '--stroke-strong']];
+  $('#swatches').innerHTML = list.map(([n, v]) => `<div class="sw" data-v="${css(v)}"><div class="c" style="background:var(${v})"></div><div class="l"><b>${n}</b><span>${css(v)}</span></div></div>`).join('');
+  $$('.sw').forEach(s => s.onclick = () => { navigator.clipboard?.writeText(s.dataset.v); const t = $('#copyToast'); t.textContent = '已复制 ' + s.dataset.v; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1200); });
+}
+buildSwatches();
+render();
+window.addEventListener('resize', () => { moveInd(); layoutSegs(); });
+</script>
+</body>
+</html>

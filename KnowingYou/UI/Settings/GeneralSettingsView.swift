@@ -1,8 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// The 通用 (General) page: G1–G9. Section spacing follows 02-ui-spec.md §3;
-/// `SectionHeader`/`SettingsRow` already encode the per-row heights.
+/// The 通用 (General) page: system, data & storage, help & feedback.
 struct GeneralSettingsView: View {
     @State private var launchAtLogin = Preferences.shared.launchAtLogin
     @State private var showDockIcon = Preferences.shared.showDockIcon
@@ -18,15 +17,10 @@ struct GeneralSettingsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                systemSection
-                dataAndStorageSection
-                helpAndFeedbackSection
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 32)
+        SettingsPageScaffold(title: "通用", lead: "启动方式、界面语言与录音存放位置。") {
+            systemSection
+            dataAndStorageSection
+            helpAndFeedbackSection
         }
         .task {
             try? SaveDirectory.ensureExists(at: saveDirectoryPath)
@@ -51,69 +45,62 @@ struct GeneralSettingsView: View {
     }
 
     private var systemSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("系统")
-            VStack(spacing: 0) {
-                SettingsRow(title: "开机时自动启动知鱼录音") {
-                    KYToggle(isOn: launchAtLoginBinding)
-                }
-                SettingsRow(title: "在 Dock 中显示图标") {
-                    KYToggle(isOn: dockIconBinding)
-                }
-                SettingsRow(title: "显示语言", subtitle: "选择知鱼录音的界面语言") {
-                    BorderlessPopup(
-                        selection: appLanguageBinding,
-                        options: [
-                            .init(value: .zhHans, title: "中文（简体）"),
-                            .init(value: .en, title: "English"),
-                        ]
-                    )
-                }
+        SettingsSection("系统") {
+            SettingsRow(title: "开机时自动启动知鱼录音", systemImage: "power") {
+                KYToggle(isOn: launchAtLoginBinding)
+            }
+            SettingsRow(title: "在 Dock 中显示图标", systemImage: "dock.rectangle") {
+                KYToggle(isOn: dockIconBinding)
+            }
+            SettingsRow(title: "显示语言", subtitle: "选择知鱼录音的界面语言", systemImage: "globe") {
+                KYPopup(
+                    selection: appLanguageBinding,
+                    options: [
+                        .init(value: .zhHans, title: String(localized: "中文（简体）")),
+                        .init(value: .en, title: "English"),
+                    ]
+                )
             }
         }
     }
 
     private var dataAndStorageSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("数据与存储")
-            VStack(spacing: 0) {
-                SettingsRow(
-                    title: "录音保存路径",
-                    subtitle: isDirectoryWritable
-                        ? LocalizedStringKey(SaveDirectory.displayPath(saveDirectoryPath))
-                        : "无法写入此位置",
-                    subtitleColor: isDirectoryWritable ? KYColor.textSecondary : .red,
-                    subtitleLineLimit: 1
-                ) {
-                    OutlinedButton("更改…", action: chooseDirectory)
-                }
-                SettingsRow(title: "在 Finder 中显示") {
-                    OutlinedButton("打开", action: revealInFinder)
-                }
-                SettingsRow(title: "磁盘占用") {
-                    Text(diskUsageText)
-                        .font(KYFont.rowSubtitle)
-                        .foregroundStyle(KYColor.textSecondary)
-                }
+        SettingsSection("数据与存储") {
+            SettingsRow(
+                title: "录音保存路径",
+                subtitle: isDirectoryWritable
+                    ? LocalizedStringKey(SaveDirectory.displayPath(saveDirectoryPath))
+                    : "无法写入此位置",
+                systemImage: "folder",
+                subtitleColor: isDirectoryWritable ? KYColor.text2 : KYColor.rec,
+                subtitleLineLimit: 1
+            ) {
+                KYButton("更改…", action: chooseDirectory)
+            }
+            SettingsRow(title: "在 Finder 中显示", systemImage: "arrow.up.forward.app") {
+                KYButton("打开", action: revealInFinder)
+            }
+            SettingsRow(title: "磁盘占用", systemImage: "internaldrive") {
+                Text(diskUsageText)
+                    .font(KYFont.timer)
+                    .foregroundStyle(KYColor.text2)
+                    .contentTransition(.numericText())
             }
         }
     }
 
     private var helpAndFeedbackSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader("帮助与反馈")
-            VStack(spacing: 0) {
-                SettingsRow(title: "使用帮助") {
-                    OutlinedButton("查看帮助") {
-                        MarkdownViewerWindow.show(title: String(localized: "使用帮助"), document: .help)
-                    }
+        SettingsSection("帮助与反馈") {
+            SettingsRow(title: "使用帮助", systemImage: "questionmark.circle") {
+                KYButton("查看帮助") {
+                    MarkdownViewerWindow.show(title: String(localized: "使用帮助"), document: .help)
                 }
-                SettingsRow(title: "反馈") {
-                    OutlinedButton("发送邮件", action: sendFeedbackEmail)
-                }
-                SettingsRow(title: "应用诊断") {
-                    OutlinedButton("导出诊断日志", action: DiagnosticsExport.export)
-                }
+            }
+            SettingsRow(title: "反馈", systemImage: "envelope") {
+                KYButton("发送邮件", action: sendFeedbackEmail)
+            }
+            SettingsRow(title: "应用诊断", systemImage: "waveform.path.ecg") {
+                KYButton("导出诊断日志", action: DiagnosticsExport.export)
             }
         }
     }
@@ -217,5 +204,5 @@ struct GeneralSettingsView: View {
 
 #Preview {
     GeneralSettingsView()
-        .frame(width: 496, height: 520)
+        .frame(width: 540, height: 580)
 }

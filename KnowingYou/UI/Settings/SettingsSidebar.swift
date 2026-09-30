@@ -1,46 +1,53 @@
 import SwiftUI
 
-/// F1–F3: the 203pt-wide sidebar, its 5-item list, and the bottom
-/// app-identity card (which replaces the reference's account/membership card).
+/// The full-height sidebar: page list with a shared springy selection
+/// indicator, and the app-identity card at the bottom (taps → About).
+/// Traffic-light buttons float over its top-left (the window uses a
+/// transparent full-size-content title bar), hence the top inset.
 struct SettingsSidebar: View {
     @Binding var selection: SettingsPage
 
-    private let width: CGFloat = 203
+    @Namespace private var indicator
+    private let width: CGFloat = 220
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 0) {
+            VStack(spacing: 2) {
                 ForEach(SettingsPage.allCases) { page in
-                    SidebarItem(title: page.title, systemImage: page.systemImage, isSelected: selection == page) {
-                        selection = page
+                    SidebarItem(
+                        title: page.title,
+                        systemImage: page.systemImage,
+                        isSelected: selection == page,
+                        indicatorNamespace: indicator
+                    ) {
+                        withAnimation(KYMotion.state) { selection = page }
                     }
                 }
             }
-            .padding(.top, 38)
-            .padding(.leading, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 52)
+            .padding(.horizontal, 10)
 
             Spacer(minLength: 0)
 
             SidebarBottomCard {
-                selection = .about
+                withAnimation(KYMotion.state) { selection = .about }
             }
-            .padding(.bottom, 16)
+            .padding(10)
         }
         .frame(width: width)
-        .background(KYColor.bgSidebar)
+        .frame(maxHeight: .infinity)
+        .background(KYColor.bg)
         .overlay(alignment: .trailing) {
-            Rectangle()
-                .fill(KYColor.strokeHairline)
-                .frame(width: 1)
+            Rectangle().fill(KYColor.stroke).frame(width: 1)
         }
     }
 }
 
-/// F3: circular app icon + app name + version, standing in for the
-/// reference's avatar/membership card. Tapping it jumps to the About page.
+/// Mark + name + "本地版 · vX" with a glowing "local" dot.
 private struct SidebarBottomCard: View {
     let action: () -> Void
+
+    @State private var isHovering = false
 
     private var versionString: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -48,37 +55,39 @@ private struct SidebarBottomCard: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(KYColor.bgSidebarSelected)
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        KYBrand.logo(size: 22)
-                    }
-
-                VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 10) {
+                KYBrand.logo(size: 30)
+                VStack(alignment: .leading, spacing: 2) {
                     Text("知鱼录音")
-                        .font(KYFont.sidebarCardTitle)
-                        .foregroundStyle(KYColor.textPrimary)
-                    Text(String(format: String(localized: "本地版 · v%@"), versionString))
-                        .font(KYFont.sidebarCardSubtitle)
-                        .foregroundStyle(KYColor.textGold)
+                        .font(KYFont.headline)
+                        .foregroundStyle(KYColor.text)
+                    HStack(spacing: 5) {
+                        Circle()
+                            .fill(KYColor.accent)
+                            .frame(width: 6, height: 6)
+                            .shadow(color: KYColor.accentGlow, radius: 3)
+                        Text(String(format: String(localized: "本地版 · v%@"), versionString))
+                            .font(KYFont.small)
+                            .foregroundStyle(KYColor.text2)
+                    }
                 }
-
                 Spacer(minLength: 0)
-
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundStyle(KYColor.textSecondary)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(KYColor.text3)
+                    .offset(x: isHovering ? 2 : 0)
             }
-            .padding(.horizontal, 16)
+            .padding(12)
+            .kyCard()
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .kyAnimation(KYMotion.micro, value: isHovering)
     }
 }
 
 #Preview {
     SettingsSidebar(selection: .constant(.general))
-        .frame(height: 520)
+        .frame(height: 580)
 }

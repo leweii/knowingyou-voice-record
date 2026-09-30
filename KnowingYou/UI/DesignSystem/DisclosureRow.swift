@@ -1,23 +1,27 @@
 import SwiftUI
 
-/// Disclosure row per 02-ui-spec.md §1.3: 14pt title + a 16pt chevron that
-/// flips between down (collapsed) and up (expanded) on click.
+/// A tappable header with a chevron that rotates between collapsed (→) and
+/// expanded (↓). Callers wrap the state change in `KYMotion.state` so the
+/// revealed content springs open in step with the chevron.
 struct DisclosureRow: View {
     let title: LocalizedStringKey
     @Binding var isExpanded: Bool
+    var font: Font = KYFont.caption
+    var color: Color = KYColor.text2
 
     var body: some View {
         Button {
-            isExpanded.toggle()
+            withAnimation(KYMotion.state) { isExpanded.toggle() }
         } label: {
             HStack {
                 Text(title)
-                    .font(KYFont.rowTitle)
-                    .foregroundStyle(KYColor.textPrimary)
+                    .font(font)
+                    .foregroundStyle(color)
                 Spacer()
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 16))
-                    .foregroundStyle(KYColor.textSecondary)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(KYColor.text2)
+                    .rotationEffect(.degrees(isExpanded ? 0 : -90))
             }
             .contentShape(Rectangle())
         }
@@ -26,7 +30,7 @@ struct DisclosureRow: View {
 }
 
 #Preview {
-    DisclosureRow(title: "支持在以下应用中识别会议", isExpanded: .constant(true))
+    DisclosureRow(title: "最近录音", isExpanded: .constant(true))
         .padding()
-        .frame(width: 480)
+        .frame(width: 320)
 }

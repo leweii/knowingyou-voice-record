@@ -196,7 +196,9 @@ final class AppState {
 
     /// E11 in the notes window.
     func addMark() {
-        notesStore?.addMark(at: .now)
+        guard let notesStore else { return }
+        notesStore.addMark(at: .now)
+        FloatingWidgetPanel.shared.pulseMark()
     }
 
     /// The ⌥⌘M global hotkey (S17) — same effect as E11's toolbar button,
@@ -220,6 +222,7 @@ final class AppState {
                     at: wallClock
                 )
                 notesStore?.addScreenshot(path: path, at: wallClock)
+                FloatingWidgetPanel.shared.pulseScreenshot()
             } catch {
                 AppLog.recording.error("screenshot capture failed: \(error, privacy: .public)")
                 notesStore?.addEvent("截图失败：\(Self.describeScreenshotFailure(error))", at: wallClock)

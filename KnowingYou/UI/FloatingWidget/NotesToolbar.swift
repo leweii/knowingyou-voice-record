@@ -1,13 +1,10 @@
 import SwiftUI
 
-/// E7–E12 (02-ui-spec.md §10): pause/stop/level+timer/mark/screenshot, each
-/// a 56×44 rounded-8 button. Uses a flexible `HStack`+`Spacer` layout rather
-/// than the original spec's window-absolute `.position()` x-ranges, since
-/// the notes window is now user-resizable (2026-09-24, Jakob's real-Mac
-/// feedback) — pause/stop stay grouped on the left, flag/crop stay grouped
-/// on the right, and the level+timer group is centered in the space between
-/// them by two equal `Spacer()`s, which keeps both gaps equal automatically
-/// at any window width instead of needing a hand-picked center coordinate.
+/// Notes-window toolbar: pause/stop on the left, live dot + timer + meter in
+/// the middle, mark/screenshot on the right. Flexible `HStack`+`Spacer`
+/// layout since the notes window is user-resizable (2026-09-24, Jakob's
+/// real-Mac feedback) — the middle group stays centered between the two
+/// button groups at any width.
 struct NotesToolbar: View {
     let isPaused: Bool
     let micLevel: Float
@@ -18,68 +15,78 @@ struct NotesToolbar: View {
     var onScreenshot: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
-            OutlinedToolbarButton(systemImage: isPaused ? "play.fill" : "pause", action: onTogglePause)
+        HStack(spacing: 8) {
+            ToolbarButton(systemImage: isPaused ? "play.fill" : "pause.fill", help: isPaused ? "继续" : "暂停", action: onTogglePause)
+            ToolbarButton(systemImage: "stop.fill", help: "停止并保存", tint: KYColor.rec, action: onStop)
 
-            Button(action: onStop) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(KYColor.bgButtonFilledLight)
-                    .frame(width: 56, height: 44)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(KYColor.textPrimary)
-                            .frame(width: 14, height: 14)
-                    }
-            }
-            .buttonStyle(.plain)
-
-            Spacer(minLength: 12)
+            Spacer(minLength: 8)
 
             HStack(spacing: 8) {
-                LevelMeterView(level: micLevel, segmentWidth: 3, segmentSpacing: 2.5, minHeight: 3, maxHeight: 12)
-                Text(Self.elapsedString(displayedElapsed))
-                    .font(.system(size: 14))
-                    .foregroundStyle(KYColor.textPrimary)
-                    .monospacedDigit()
+                BreathingDot(color: isPaused ? KYColor.warn : KYColor.rec, size: 7, isBreathing: !isPaused)
+                Text(PillView.elapsedString(displayedElapsed))
+                    .font(KYFont.timer)
+                    .foregroundStyle(isPaused ? KYColor.text2 : KYColor.text)
+                    .contentTransition(.numericText())
+                LevelMeterView(
+                    level: isPaused ? 0 : micLevel,
+                    segmentWidth: 3,
+                    segmentSpacing: 2,
+                    minHeight: 3,
+                    maxHeight: 12,
+                    color: isPaused ? KYColor.text3 : nil
+                )
             }
+            .allowsHitTesting(false) // purely informational — let a drag started here move the window
 
-            Spacer(minLength: 12)
+            Spacer(minLength: 8)
 
-            OutlinedToolbarButton(systemImage: "flag", action: onMark)
-            OutlinedToolbarButton(systemImage: "crop", action: onScreenshot)
+            ToolbarButton(systemImage: "flag", help: "标记 ⌥⌘M", action: onMark)
+            ToolbarButton(systemImage: "camera.viewfinder", help: "截屏标记 ⌥⌘S", action: onScreenshot)
         }
-        .padding(.horizontal, 16)
-        .frame(height: 44)
-    }
-
-    private static func elapsedString(_ interval: TimeInterval) -> String {
-        let total = Int(interval.rounded())
-        let hours = total / 3600
-        let minutes = (total % 3600) / 60
-        let seconds = total % 60
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        }
-        return String(format: "%02d:%02d", minutes, seconds)
+        .padding(.horizontal, 12)
+        .frame(height: 58)
+        .background(KYColor.surface.opacity(0.35))
+        .overlay(alignment: .top) { Rectangle().fill(KYColor.stroke).frame(height: 1) }
     }
 }
 
-private struct OutlinedToolbarButton: View {
+/// 38×38 rounded square; lifts on hover. `tint` (if set) fills it on hover —
+/// used for the red stop button.
+private struct ToolbarButton: View {
     let systemImage: String
+    let help: LocalizedStringKey
+    var tint: Color?
     let action: () -> Void
+
+    @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(KYColor.strokeButton, lineWidth: 1)
-                .frame(width: 56, height: 44)
-                .overlay {
-                    Image(systemName: systemImage)
-                        .font(.system(size: 16))
-                        .foregroundStyle(KYColor.textPrimary)
-                }
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(foreground)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 38, height: 38)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(background))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(tint != nil && isHovering ? .clear : KYColor.stroke, lineWidth: 1))
+                .shadow(color: tint != nil && isHovering ? KYColor.recGlow : .clear, radius: 9)
+                .offset(y: isHovering ? -2 : 0)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressSquashStyle())
+        .onHover { isHovering = $0 }
+        .kyAnimation(KYMotion.micro, value: isHovering)
+        .help(Text(help))
+    }
+
+    private var foreground: Color {
+        if let tint { return isHovering ? .white : tint }
+        return KYColor.text
+    }
+
+    private var background: Color {
+        if let tint, isHovering { return tint }
+        return isHovering ? KYColor.surface3 : KYColor.surface2
     }
 }
 
@@ -93,6 +100,5 @@ private struct OutlinedToolbarButton: View {
         onMark: {},
         onScreenshot: {}
     )
-    .frame(width: 418, height: 60)
-    .background(KYColor.bgWindow)
+    .frame(width: 440)
 }
