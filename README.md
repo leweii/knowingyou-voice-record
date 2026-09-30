@@ -6,6 +6,15 @@
 
 No account. No cloud. No telemetry. No auto-update. No AI.
 
+> [!IMPORTANT]
+> **Installing the beta — one extra step.** This beta isn't notarized by Apple yet, so macOS will refuse to open it ("KnowingYou" Not Opened). After dragging the app into Applications, open **Terminal** and run:
+>
+> ```sh
+> xattr -dr com.apple.quarantine /Applications/KnowingYou.app
+> ```
+>
+> Then open KnowingYou normally. You only need to do this once. If the "Not Opened" dialog already appeared, click **Done** — not *Move to Trash*. This is a temporary workaround until notarized builds ship. [Full install steps ↓](#download--install)
+
 ![Knowing You during a meeting: the floating notes window, the recording capsule, the menu-bar popover and a meeting-detected prompt](docs/screenshots/hero-en.png)
 
 ## What it does
@@ -71,10 +80,16 @@ Before a recording starts, Knowing You reminds you that everyone in the meeting 
 
 1. Download the latest `KnowingYou-x.y.z-arm64.dmg` from [Releases](https://github.com/leweii/knowingyou-voice-record/releases).
 2. Open the DMG and drag **KnowingYou** into **Applications**. Launch it from there, not from inside the DMG, or "launch at login" can't register.
-3. **The current beta is not notarized by Apple yet**, so Gatekeeper will block the first launch. Allow it once, either way:
-   - **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to KnowingYou; or
-   - in Terminal: `xattr -dr com.apple.quarantine /Applications/KnowingYou.app`
-4. Walk through the short first-run checklist.
+3. **Remove the download quarantine flag** (temporary, needed until builds are notarized). Open **Terminal** and run:
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/KnowingYou.app
+   ```
+   Without this, macOS shows "KnowingYou" Not Opened. If you already saw that dialog, click **Done** (not *Move to Trash*) and run the command.
+   <details><summary>Prefer not to use Terminal?</summary>
+
+   Try to open the app once so macOS blocks it, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to KnowingYou (the button only shows for about an hour after the block).
+   </details>
+4. Open **KnowingYou** from Applications and walk through the short first-run checklist. The app lives in the **menu bar** (top-right) — there's no Dock icon.
 
 <img src="docs/screenshots/onboarding-en.png" width="420" alt="First-run permission checklist">
 

@@ -6,6 +6,15 @@
 
 没有账号，没有云端，没有遥测，没有自动更新，没有 AI。
 
+> [!IMPORTANT]
+> **安装 Beta 版需要多做一步。** 这个 Beta 还没有经过 Apple 公证，macOS 会拒绝打开（提示 "KnowingYou" Not Opened / 无法打开）。把 app 拖进「应用程序」后，打开**终端**执行：
+>
+> ```sh
+> xattr -dr com.apple.quarantine /Applications/KnowingYou.app
+> ```
+>
+> 然后正常打开 KnowingYou 即可，只需要做一次。如果已经弹出了拦截提示，点 **Done（完成）**，**不要**点 *Move to Trash（移到废纸篓）*。这是公证版发布之前的临时解决方案。[完整安装步骤 ↓](#下载与安装)
+
 ![会议进行中的知鱼录音：浮动纪要窗、录音胶囊、菜单栏弹窗和会议检测提醒](docs/screenshots/hero-zh.png)
 
 ## 它做什么
@@ -72,10 +81,16 @@ Action：Jay 下周三前给出 42* 与 5* 合并方案
 
 1. 前往 [Releases](https://github.com/leweii/knowingyou-voice-record/releases) 下载最新的 `KnowingYou-x.y.z-arm64.dmg`。
 2. 打开 DMG，把 **KnowingYou** 拖进「应用程序」文件夹，再从「应用程序」里打开。直接从 DMG 里运行的话，「开机启动」无法注册。
-3. **目前的 Beta 版还没有经过 Apple 公证**，首次打开会被 Gatekeeper 拦截，放行一次即可，任选一种方式：
-   - 打开「系统设置 → 隐私与安全性」，在页面底部找到 KnowingYou，点「仍要打开」；或
-   - 在终端执行：`xattr -dr com.apple.quarantine /Applications/KnowingYou.app`
-4. 按首次启动的引导完成授权。
+3. **去掉下载隔离标记**（临时方案，公证版发布前需要）。打开**终端**执行：
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/KnowingYou.app
+   ```
+   不做这一步，macOS 会提示 "KnowingYou" Not Opened。如果已经看到这个提示，点 **Done（完成）**（不要点 *Move to Trash*），再执行上面的命令。
+   <details><summary>不想用终端？</summary>
+
+   先尝试打开一次 app 让系统拦截，然后打开「系统设置 → 隐私与安全性」，滚到底部，在 KnowingYou 旁边点「仍要打开」（这个按钮只在被拦截后约一小时内出现）。
+   </details>
+4. 从「应用程序」里打开 **KnowingYou**，按首次启动的引导完成授权。app 常驻在屏幕右上角的**菜单栏**里，没有 Dock 图标。
 
 <img src="docs/screenshots/onboarding-zh.png" width="420" alt="首次启动的授权清单">
 
