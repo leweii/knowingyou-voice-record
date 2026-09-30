@@ -35,10 +35,10 @@
 	<key>KYIsPrerelease</key>
 	<true/>
 	<key>KYGitHubURL</key>
-	<string>https://github.com/jakobhe/knowingyou-voice-record</string>
+	<string>https://github.com/leweii/knowingyou-voice-record</string>
 	<key>KYReleasesURL</key>
-	<string>https://github.com/jakobhe/knowingyou-voice-record/releases</string>
+	<string>https://github.com/leweii/knowingyou-voice-record/releases</string>
 	<key>KYFeedbackEmail</key>
-	<string>feedback@example.invalid</string>
+	<string>lewei.me@gmail.com</string>
 </dict>
 </plist>

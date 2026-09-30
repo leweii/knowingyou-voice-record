@@ -6,10 +6,14 @@ macOS 菜单栏会议录音应用。检测到会议软件（腾讯会议、飞�
 
 ## 下载与安装
 
-1. 前往 [Releases](https://github.com/jakobhe/knowingyou-voice-record/releases) 下载最新的 `KnowingYou-x.y.z-arm64.dmg`。
+1. 前往 [Releases](https://github.com/leweii/knowingyou-voice-record/releases) 下载最新的 `KnowingYou-x.y.z-arm64.dmg`。
 2. 打开 DMG，把「知鱼录音」拖进 `应用程序`（`/Applications`）文件夹。
    - **必须先拖进「应用程序」再打开**——直接从 DMG 里双击运行，"开机启动"这个功能（用的是系统的 `SMAppService`）会注册失败，这是 macOS 本身的限制，不是 bug。
-3. 从「应用程序」文件夹里双击打开。首次打开如果被 Gatekeeper 拦截，说明这个版本还没有走完签名/公证流程——请到 Releases 页面确认下载的是已标注「已公证」的版本。
+3. 从「应用程序」文件夹里双击打开。
+   - **目前的 Beta 版未经 Apple 公证**（还没有 Developer ID 证书），首次打开会被 Gatekeeper 拦截，提示"无法验证开发者"或"已损坏"。任选一种方式放行：
+     - 打开「系统设置 → 隐私与安全性」，在底部找到被拦截的「KnowingYou」，点「仍要打开」；或
+     - 在终端执行 `xattr -dr com.apple.quarantine /Applications/KnowingYou.app` 后再双击打开。
+   - 这一步只需要做一次。正式版会走完签名与公证，届时不再需要。
 4. 按引导窗口走完首次设置（选择保存文件夹、决定是否自动录音等）。
 
 **在拿到已公证的 DMG 之前，你现在就能用**：签名/公证只在"把 app 分发给别人下载"这条链路上是必需的——macOS 的 Gatekeeper 只拦截带有隔离标记（`com.apple.quarantine`，从浏览器/邮件下载的文件才会被打上）的 App，本机 `make run` 构建出来的 App 没有这个标记，直接双击打开不会被拦截。也就是说：`git clone` 这个仓库、`make run`，你自己电脑上今天就有一个功能完整、可以正常录音记纪要的 App，不需要等 S21 的签名/公证走完。已经用 Release 配置实测过一次：`xcodebuild build -scheme KnowingYou -configuration Release` 编译通过，`open` 启动后进程稳定运行、正常弹出首次引导窗口，没有触发任何"来自身份不明的开发者"的 Gatekeeper 拦截。签名/公证/DMG 那一整套，是为了以后你想把它发给别人下载用时才需要的东西。
@@ -52,7 +56,7 @@ macOS 菜单栏会议录音应用。检测到会议软件（腾讯会议、飞�
 
 ```sh
 brew install xcodegen
-git clone https://github.com/jakobhe/knowingyou-voice-record.git
+git clone https://github.com/leweii/knowingyou-voice-record.git
 cd knowingyou-voice-record
 make run        # 生成工程、构建 Debug 版本、打开
 ```
