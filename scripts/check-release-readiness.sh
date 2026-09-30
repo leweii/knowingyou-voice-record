@@ -39,9 +39,14 @@ case "$FEEDBACK_EMAIL" in
 		;;
 esac
 
-# 3. The logo must no longer be the placeholder SF Symbol.
-if grep -q 'placeholderSymbolName = "waveform.circle"' KnowingYou/UI/DesignSystem/Brand.swift 2>/dev/null; then
-	fail "KYBrand.placeholderSymbolName in Brand.swift is still the placeholder SF Symbol 'waveform.circle' — wire in the real logo asset before release"
+# 3. The real logo must be wired in: the app icon set must exist (generated
+# by scripts/make-app-icon.swift) and Brand.swift must not have regressed to
+# the old SF Symbol placeholder.
+if [ ! -f KnowingYou/Resources/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png ]; then
+	fail "AppIcon.appiconset is missing — run 'swift scripts/make-app-icon.swift' before release"
+fi
+if grep -q 'waveform.circle' KnowingYou/UI/DesignSystem/Brand.swift 2>/dev/null; then
+	fail "Brand.swift still references the placeholder SF Symbol 'waveform.circle' — use the real logo"
 fi
 
 # 4. KYIsPrerelease must agree with whether VERSION carries a pre-release

@@ -33,9 +33,9 @@
 | 8 | 本地转写 | 不进 v1 | — |
 | 9 | CPU 架构 | v1 只出 arm64（减少测试矩阵；Intel 待需求） | S01, S21 |
 | 10 | Bundle ID | `com.jakobhe.knowingyou` | S01 |
-| 11 | Logo | 未就位前全部用 SF Symbol `waveform.circle` 占位，集中在 `DesignSystem/Brand.swift` 一处替换 | S02 |
+| 11 | Logo | ~~SF Symbol `waveform.circle` 占位~~ → **2026-09-30 Jakob 拍板采用 S22 设计的"鱼形声波"标志**：应用内 `KYMark`、菜单栏模板图、Dock / App 图标（`scripts/make-app-icon.swift` 生成）共用一套几何，集中在 `DesignSystem/Brand.swift` | S02, S22 |
 
-这些不再是"待确认"，是已拍板的执行依据；除非 Jakob 明确推翻，不要在实现时重新讨论。仍是占位、**发布前必须替换**的两项：#5 反馈邮箱（S19 检查，S21 release 前置校验拦截）、#11 Logo（S21 发布检查清单一项）。其余假设若后续要推翻：改这张表，再改受影响 spec，并在该 spec 的"决策记录"里注明变更日期与原因。
+这些不再是"待确认"，是已拍板的执行依据；除非 Jakob 明确推翻，不要在实现时重新讨论。仍是占位、**发布前必须替换**的一项：#5 反馈邮箱（S19 检查，S21 release 前置校验拦截）。#11 Logo 已于 2026-09-30 落地（S22）。其余假设若后续要推翻：改这张表，再改受影响 spec，并在该 spec 的"决策记录"里注明变更日期与原因。
 
 ## 3. 状态表
 
@@ -65,6 +65,7 @@
 | [S19](S19-docs-diagnostics-l10n.md) | 帮助 / 协议 / 隐私文档、诊断导出、本地化补全 | M4 | S04 | 1.5 | done |
 | [S20](S20-edge-cases-test-matrix.md) | 边界情况 + 手工测试矩阵 | M4 | S13, S16, S17, S18 | 2 | done |
 | [S21](S21-release.md) | 签名、公证、DMG、发布检查 | M5 | S20, S19 | 2.5 | done* |
+| [S22](S22-ui-redesign.md) | UI 重设计：统一设计语言 + 招牌动效 | M5 | S02–S05, S11, S15, S16 | 4 | in-progress |
 
 合计约 38.5 人日，与计划 7.5 周一致。
 

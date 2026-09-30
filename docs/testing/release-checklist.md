@@ -17,7 +17,7 @@
 - [x] `scripts/check-release-readiness.sh <version>`：硬阻断 `make release`,校验（已用 `1.0.0` / `1.0.0-beta.1` / `2.0.0` 三种输入实测确认三条检查分别能触发/通过)：
   - `project.yml` 的 `MARKETING_VERSION` 与传入版本号一致
   - `Info.plist` 的 `KYFeedbackEmail` 不再是占位值 `feedback@example.invalid`
-  - `Brand.swift` 的 `placeholderSymbolName` 不再是占位 SF Symbol `waveform.circle`
+  - App 图标资源 `AppIcon.appiconset` 存在，且 `Brand.swift` 不再引用占位 SF Symbol `waveform.circle`（2026-09-30 S22 改：Logo 已落地，检查改为防回退）
   - `Info.plist` 的 `KYIsPrerelease` 与版本号是否带有 `-` 后缀（semver pre-release 标记)一致
 - [x] `scripts/sign-and-notarize.sh <version>`：`xcodebuild archive` → `exportArchive`（Developer ID Application, manual signing) → `codesign --verify --deep --strict` → `ditto` 打包 → `notarytool submit --wait` → `stapler staple` → `spctl -a -vv` 验证。签名身份/团队 ID/notarytool profile 名全部通过环境变量传入（`KY_SIGN_IDENTITY`/`KY_TEAM_ID`/`KY_NOTARY_PROFILE`),仓库里不出现任何真实身份信息。
 - [x] `scripts/make-dmg.sh <version>`：`hdiutil` 打包（选用它而不是 `create-dmg`,避免为了背景图多引入一个 Homebrew 依赖)、`Applications` 软链、DMG 本身也签名+公证+staple、输出 `SHA256SUMS`。
@@ -27,10 +27,10 @@
 
 ## 无法在这台机器上完成、需要 Jakob 补齐的部分
 
-### 1. 两个占位符必须换成真实值（`check-release-readiness.sh` 会硬阻断,不能跳过)
+### 1. 占位符必须换成真实值（`check-release-readiness.sh` 会硬阻断,不能跳过)
 
-- `KnowingYou/Resources/Info.plist` 的 `KYFeedbackEmail`：目前是 `feedback@example.invalid`,需要 Jakob 提供一个真实能收信的地址。
-- `KnowingYou/UI/DesignSystem/Brand.swift` 的 `KYBrand`：目前用 SF Symbol `waveform.circle` 占位,需要真实 logo 资源（.icns / Asset Catalog 图片)接入 `KYBrand.logo(size:)` 和 `KYBrand.statusBarTemplateImage`。
+- ~~`KYFeedbackEmail` 占位~~：2026-09-30 已设为 `lewei.me@gmail.com`。
+- ~~Logo 占位~~：2026-09-30 已完成（S22）——Dock / App 图标、菜单栏图标、应用内标志统一为"鱼形声波"标志。
 
 ### 2. 首次发布前，`KYIsPrerelease` 需要从 `true` 改成 `false`
 
