@@ -152,4 +152,4 @@ Debug 构建用 ad-hoc 签名，本地运行不需要 Apple Developer 账号。`
 
 ## 状态
 
-**Beta（v1.0.0-beta.1）。** 全部核心功能已完成并通过单元测试，但真实环境覆盖还不够：长时间录音的混音同步，以及各会议软件在不同机器上的检测，都还没有经过大范围验证。遇到问题欢迎在 [Issues](https://github.com/leweii/knowingyou-voice-record/issues) 反馈，或者用 app 内的「设置 → 通用 → 反馈」发邮件（最好附上导出的诊断日志）。
+**Beta（v1.0.0-beta.2）。** 全部核心功能已完成并通过单元测试，但真实环境覆盖还不够：长时间录音的混音同步，以及各会议软件在不同机器上的检测，都还没有经过大范围验证。遇到问题欢迎在 [Issues](https://github.com/leweii/knowingyou-voice-record/issues) 反馈，或者用 app 内的「设置 → 通用 → 反馈」发邮件（最好附上导出的诊断日志）。
