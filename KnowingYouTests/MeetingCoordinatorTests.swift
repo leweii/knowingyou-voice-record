@@ -3,7 +3,7 @@ import Testing
 @testable import KnowingYou
 
 /// A `Clock` whose `now` only advances when the test explicitly calls
-/// `advance(by:)` — lets `MeetingCoordinatorTests` exercise the 3s/10s
+/// `advance(by:)` — lets `MeetingCoordinatorTests` exercise the 3s/1s
 /// debounce timers without ever really waiting (per this spec's "不要
 /// Task.sleep 真等" instruction).
 private final class ManualClock: Clock, @unchecked Sendable {
@@ -149,11 +149,11 @@ private struct Harness {
     }
 
     /// Forces the detector to notice `reader`'s current state immediately
-    /// (bypassing its real 2s poll timer) and lets the coordinator's
+    /// (bypassing its real 0.5s poll timer) and lets the coordinator's
     /// `for await` consumer loop process the resulting event before
     /// returning — see this spec's decision record on why a few real
     /// `Task.yield()`s are an acceptable settling mechanism here, unlike the
-    /// 3s/10s state-machine delays the `ManualClock` exists to avoid.
+    /// 3s/1s state-machine delays the `ManualClock` exists to avoid.
     func pushDetectorUpdate() async {
         _ = await detector.snapshot()
         for _ in 0..<10 { await Task.yield() }
@@ -242,16 +242,16 @@ struct MeetingCoordinatorTests {
 
         h.reader.set([])
         await h.pushDetectorUpdate()
-        await h.advanceClock(.seconds(8))
+        await h.advanceClock(.milliseconds(800))
         #expect(h.control.coordinatorStopCount == 0)
 
         h.reader.set([(pid: 1, bundleID: "us.zoom.xos")])
         await h.pushDetectorUpdate()
-        await h.advanceClock(.seconds(5)) // well past the original 10s mark, but the gap was cancelled
+        await h.advanceClock(.seconds(5)) // well past the original 1s mark, but the gap was cancelled
         #expect(h.control.coordinatorStopCount == 0)
     }
 
-    @Test func tenSecondGapStopsAndFinalizes() async {
+    @Test func oneSecondGapStopsAndFinalizes() async {
         let h = Harness(autoRecord: true)
         await h.coordinator.start()
 
@@ -262,7 +262,7 @@ struct MeetingCoordinatorTests {
 
         h.reader.set([])
         await h.pushDetectorUpdate()
-        await h.advanceClock(.seconds(10))
+        await h.advanceClock(.seconds(1))
 
         #expect(h.control.coordinatorStopCount == 1)
         if case .idle = h.control.phase {} else { Issue.record("expected idle after auto-stop, got \(h.control.phase)") }
@@ -312,21 +312,21 @@ struct MeetingCoordinatorTests {
         await h.advanceClock(.seconds(3))
         #expect(h.notifier.meetingDetectedSignals.count == 1)
 
-        // A mic blip shorter than the 10s grace period is still the same
+        // A mic blip shorter than the 1s grace period is still the same
         // meeting (Chrome releasing/re-grabbing the mic mid-call).
         h.reader.set([])
         await h.pushDetectorUpdate()
-        await h.advanceClock(.seconds(5))
+        await h.advanceClock(.milliseconds(500))
         h.reader.set([(pid: 2, bundleID: "us.zoom.xos")])
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))
         #expect(h.notifier.meetingDetectedSignals.count == 1)
 
-        // Only once the process is really gone for the full 10s and a new
+        // Only once the process is really gone for the full 1s and a new
         // one starts is it a new meeting — the prompt resumes.
         h.reader.set([])
         await h.pushDetectorUpdate()
-        await h.advanceClock(.seconds(10))
+        await h.advanceClock(.seconds(1))
         h.reader.set([(pid: 3, bundleID: "us.zoom.xos")])
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))
@@ -378,11 +378,11 @@ struct MeetingCoordinatorTests {
         await h.advanceClock(.seconds(3))
         #expect(h.control.startCalls == ["Zoom"]) // unchanged: no second start call
 
-        // Only once the app has really disappeared (full 10s grace) and a
+        // Only once the app has really disappeared (full 1s grace) and a
         // fresh session begins does the suppression clear.
         h.reader.set([])
         await h.pushDetectorUpdate()
-        await h.advanceClock(.seconds(10))
+        await h.advanceClock(.seconds(1))
         h.reader.set([(pid: 2, bundleID: "us.zoom.xos")])
         await h.pushDetectorUpdate()
         await h.advanceClock(.seconds(3))

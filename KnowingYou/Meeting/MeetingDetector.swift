@@ -29,7 +29,7 @@ actor MeetingDetector {
     init(
         apps: @escaping @Sendable () async -> [KnownApp],
         reader: ProcessObjectReading = CoreAudioProcessObjectReader(),
-        pollInterval: Duration = .seconds(2)
+        pollInterval: Duration = .milliseconds(500)
     ) {
         self.apps = apps
         self.reader = reader

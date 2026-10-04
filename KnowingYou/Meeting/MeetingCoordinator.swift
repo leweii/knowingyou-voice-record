@@ -7,7 +7,7 @@ import Foundation
 final class MeetingCoordinator {
     struct Timing: Sendable {
         var activateAfter: TimeInterval = 3
-        var endAfter: TimeInterval = 10
+        var endAfter: TimeInterval = 1
     }
 
     private let detector: MeetingDetector

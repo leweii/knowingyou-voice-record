@@ -246,7 +246,7 @@ final class AppState {
         await stopRecording(notifyUserInitiated: true)
     }
 
-    /// `MeetingCoordinator`'s auto-stop path (10s after the triggering
+    /// `MeetingCoordinator`'s auto-stop path (1s after the triggering
     /// process disappears). Identical to `stopRecording()` except it does
     /// NOT fire `onUserInitiatedStop`, since the coordinator already knows
     /// it's the one ending this recording.

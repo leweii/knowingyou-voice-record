@@ -22,7 +22,7 @@ No account. No cloud. No telemetry. No auto-update. No AI.
 1. **Detects the meeting.** When a known meeting app (Zoom, Microsoft Teams, FaceTime, Slack, Discord, Webex, Tencent Meeting, Feishu/Lark, DingTalk, WeCom, WeChat…) starts using the microphone, Knowing You either starts recording automatically or asks you first. Browser-based meetings (Chrome, Safari, Edge, Firefox, Arc) always ask, never auto-record, since it can't tell which website is using the mic. Each meeting prompts at most once.
 2. **Records both sides.** Your microphone and everything the Mac plays (the other participants) are captured and mixed into one track, or kept as a dual-track file (left = you, right = them) if you prefer.
 3. **Lets you take notes as you go.** A small capsule floats above your meeting with a live waveform and timer. Expand it into a notes window: every line you type is stamped with the wall-clock time and the offset from the start of the recording. Drop a 🚩 mark or a screenshot of the meeting window with one click or a global hotkey.
-4. **Stops when the meeting ends** (the app stops using the mic for 10 seconds), or whenever you press stop, and saves everything locally.
+4. **Stops when the meeting ends** (the app stops using the mic for about 1 second), or whenever you press stop, and saves everything locally.
 
 ![The menu-bar popover while recording, the floating capsule, and the expanded notes window](docs/screenshots/recording-en.png)
 

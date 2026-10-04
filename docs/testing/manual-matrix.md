@@ -26,7 +26,7 @@
 | 7 | 录音中切换输出设备 | 系统音频继续，允许 <300ms 空洞 | 部分 | 代码走查 | Process Tap 架构本身与「输出设备」无关（tap 的是系统混音,不是某个输出设备的流），S08 的聚合设备重建逻辑覆盖设备变更。真实设备切换无法在此环境验证 |
 | 8 | 3 小时长录音 | 内存平稳 <150MB，转码 <60s | 否 | — | 无法在此环境长时间运行验证（远程会话不适合挂 3 小时）,标记为**未验证**,交给用户在真机上跑一次 |
 | 9 | 两个会议软件同时用麦 | 触发应用取最早者；文件名一个 | 是 | 单测 | `MeetingCoordinatorTests.twoSimultaneousMeetingAppsOnlyStartOneRecording()`（S20 新增），全绿 |
-| 10 | 会议软件崩溃 | 10s 后自动停止 | 是 | 单测 | `MeetingCoordinatorTests` 中既有的 10s debounce 停止用例（S13,用 `ManualClock` 驱动),对 coordinator 而言「进程崩溃」与「正常退出」在 Core Audio 信号层面是同一件事（不再用麦），走同一条路径 |
+| 10 | 会议软件崩溃 | 1s 后自动停止 | 是 | 单测 | `MeetingCoordinatorTests` 中既有的 1s debounce 停止用例（S13,用 `ManualClock` 驱动),对 coordinator 而言「进程崩溃」与「正常退出」在 Core Audio 信号层面是同一件事（不再用麦），走同一条路径 |
 | 11 | 系统音频权限中途被撤销 | tap 失败 → 只录麦克风并通知,不崩 | 是 | 代码走查 | S20 新增：`RecordingSession.start()` 中 tap 创建失败改为 `catch` 后 yield `.systemAudioTapFailed` 事件、降级为纯麦克风,不再 rethrow 整个 session 失败。`AppState.handle(_:)` 收到后往 notes 里写事件 |
 | 12 | 用户在 Finder 改名 / 删除正在录的文件 | 不受影响；停止时若目标不存在则重建 | 部分（已知限制） | 代码走查 | 录制期间文件描述符已打开,POSIX 语义下继续写入不受影响（改名/删除只影响目录项）。但**转码阶段**（stop 时 `.caf`→`.m4a`）依赖原路径存在,如果 `.caf` 被删除,转码会失败——未实现「目标不存在则重建」，记入 known-issues.md |
 | 13 | 语言切换后目录名 | 不变 | 是 | 单测 | `PreferencesTests.saveDirectoryPathDoesNotChangeAfterLaterLanguageSwitch()`（S20 新增），全绿 |
