@@ -151,4 +151,4 @@ Debug builds are ad-hoc signed, so no Apple Developer account is needed to run l
 
 ## Status
 
-**Beta (v1.0.0-beta.2).** All core features are built and unit-tested, but real-world coverage is still thin: long-recording sync, and detection across every meeting app on many different Macs, haven't been validated widely yet. Please report problems in [Issues](https://github.com/leweii/knowingyou-voice-record/issues), or use **Settings → General → Feedback** (attach an exported diagnostics zip if you can).
+**Beta (v1.0.0-beta.3).** All core features are built and unit-tested, but real-world coverage is still thin: long-recording sync, and detection across every meeting app on many different Macs, haven't been validated widely yet. Please report problems in [Issues](https://github.com/leweii/knowingyou-voice-record/issues), or use **Settings → General → Feedback** (attach an exported diagnostics zip if you can).
