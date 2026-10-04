@@ -21,7 +21,9 @@ actor RecordingSession {
     }
 
     private static let targetSampleRate = 48000.0
-    private static let chunkSize = 2400 // 50ms @ 48kHz
+    /// How far one source may run ahead of a stalled other before the
+    /// stalled one is zero-padded — see `Mixer.framesToMix`.
+    private static let maxSourceLag = 24000 // 500ms @ 48kHz
 
     private let config: Config
     private let eventContinuation: AsyncStream<Event>.Continuation
@@ -29,8 +31,8 @@ actor RecordingSession {
 
     private var micCapture: MicCapture?
     private var systemAudioTap: SystemAudioTap?
-    private let micQueue = SourceSampleQueue()
-    private let systemQueue = SourceSampleQueue()
+    private let micQueue = SourceSampleQueue(targetSampleRate: targetSampleRate)
+    private let systemQueue = SourceSampleQueue(targetSampleRate: targetSampleRate)
 
     private var writer: AVAudioFile?
     private var state: RecordingSessionState = .preparing {
@@ -165,6 +167,7 @@ actor RecordingSession {
 
         micCapture?.stop()
         systemAudioTap?.stop()
+        pumpOnce(flush: true) // the tail both sources delivered since the last tick
         micCapture = nil
         systemAudioTap = nil
 
@@ -199,7 +202,7 @@ actor RecordingSession {
             var next = clock.now
             while !Task.isCancelled {
                 guard let self else { return }
-                await self.pumpCatchingUp()
+                await self.pumpOnce()
                 next += .milliseconds(50)
                 if next < clock.now { next = clock.now } // stalled: resume the cadence, don't burst forever
                 try? await Task.sleep(until: next, tolerance: .zero, clock: clock)
@@ -207,36 +210,34 @@ actor RecordingSession {
         }
     }
 
-    /// One regular pump, then extra passes while either queue is holding more
-    /// than ~100ms of audio, so any backlog (scheduling hiccup, clock drift
-    /// between the sources and this timer) is drained instead of becoming
-    /// permanent lag.
-    private func pumpCatchingUp() {
-        pumpOnce()
-        var extraPasses = 0
-        while extraPasses < 20,
-              max(micQueue.availableCount, systemQueue.availableCount) >= Self.chunkSize * 2 {
-            pumpOnce()
-            extraPasses += 1
-        }
-    }
+    /// Mixes whatever both sources have delivered since the last pass (see
+    /// `Mixer.framesToMix`), and writes it out unless paused. Not
+    /// sample-accurate hostTime alignment — the sources are assumed to start
+    /// together and run at the same 48kHz rate once resampled — which is the
+    /// pragmatic v1 tradeoff (see decision record). `flush` drains
+    /// everything left, padding the shorter source; used on stop.
+    private func pumpOnce(flush: Bool = false) {
+        let hasSystemSource = config.captureSystemAudio && systemAudioTap != nil
+        let count = Mixer.framesToMix(
+            micAvailable: micQueue.availableCount,
+            systemAvailable: hasSystemSource ? systemQueue.availableCount : nil,
+            maxLag: Self.maxSourceLag,
+            flush: flush
+        )
+        let micChunk = micQueue.drain(count: count)
+        let systemChunk = hasSystemSource
+            ? systemQueue.drain(count: count)
+            : [Float](repeating: 0, count: count)
 
-    /// Drains a fixed-size chunk from each source (zero-padding whichever is
-    /// short — see decision record), mixes it, and writes it out unless
-    /// paused. Not sample-accurate hostTime alignment; a coarse, periodic
-    /// drain, which is the pragmatic v1 tradeoff given this can't be
-    /// end-to-end verified on this machine anyway (mic capture is blocked
-    /// here — see S07's decision record).
-    private func pumpOnce() {
-        let micChunk = micQueue.drain(count: Self.chunkSize)
-        let systemChunk = config.captureSystemAudio
-            ? systemQueue.drain(count: Self.chunkSize)
-            : [Float](repeating: 0, count: Self.chunkSize)
-
+        // An empty pass (nothing new from a source yet) keeps the meter where
+        // it is instead of dipping it to silence for a tick.
         let rawMicRMS = LevelMeter.rms(micChunk)
-        let micLevel = micLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: rawMicRMS))
-        let systemLevel = systemLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: LevelMeter.rms(systemChunk)))
-        eventContinuation.yield(.level(mic: micLevel, system: systemLevel))
+        var micLevel = micLevelSmoother.value
+        if count > 0 {
+            micLevel = micLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: rawMicRMS))
+            let systemLevel = systemLevelSmoother.update(with: LevelMeter.normalizedLevel(fromRMS: LevelMeter.rms(systemChunk)))
+            eventContinuation.yield(.level(mic: micLevel, system: systemLevel))
+        }
 
         ticksSinceLastElapsedEvent += 1
         if ticksSinceLastElapsedEvent >= 20, let startedAt { // ~once/second
@@ -259,7 +260,7 @@ actor RecordingSession {
             AppLog.recording.debug("level pipeline: rawMicRMS=\(rawMicRMS, privacy: .public) normalizedMicLevel=\(micLevel, privacy: .public)")
         }
 
-        guard !isPaused else { return }
+        guard count > 0, !isPaused else { return }
 
         let mixedSamples: [Float]
         let channelCount: Int
@@ -358,12 +359,22 @@ actor RecordingSession {
 }
 
 /// Thread-safe holding pen for extracted mono Float samples from one audio
-/// source. `enqueue` runs on a realtime audio thread: it extracts/downmixes
-/// directly (a real allocation — not gold-standard realtime-safe, but the
-/// pragmatic v1 tradeoff; see decision record). `drain` runs on the actor.
+/// source, at `RecordingSession.targetSampleRate`. `enqueue` runs on a
+/// realtime audio thread: it downmixes, resamples if the device isn't at
+/// 48kHz, and appends (real allocations — not gold-standard realtime-safe,
+/// but the pragmatic v1 tradeoff; see decision record). `drain` runs on the
+/// actor. Each queue is fed by exactly one source's callback, so the
+/// converter state needs no lock.
 private final class SourceSampleQueue: @unchecked Sendable {
     private let lock = NSLock()
     private var samples: [Float] = []
+    private let targetSampleRate: Double
+    private var converter: AVAudioConverter?
+    private var converterInputRate: Double = 0
+
+    init(targetSampleRate: Double) {
+        self.targetSampleRate = targetSampleRate
+    }
 
     func enqueue(_ buffer: AVAudioPCMBuffer, hostTime: UInt64) {
         guard let channelData = buffer.floatChannelData else { return }
@@ -383,9 +394,51 @@ private final class SourceSampleQueue: @unchecked Sendable {
             for frame in 0..<frameLength { mono[frame] *= scale }
         }
 
+        let sampleRate = buffer.format.sampleRate
+        if sampleRate != targetSampleRate {
+            // Written as if it were 48kHz, a 44.1/24/16kHz device (Bluetooth
+            // headsets, iPhone mic) plays back at the wrong speed and pitch,
+            // and underruns the mix timeline.
+            guard let resampled = resample(mono, from: sampleRate) else { return }
+            mono = resampled
+        }
+
         lock.lock()
         samples.append(contentsOf: mono)
         lock.unlock()
+    }
+
+    private func resample(_ input: [Float], from inputRate: Double) -> [Float]? {
+        guard let inputFormat = AVAudioFormat(standardFormatWithSampleRate: inputRate, channels: 1),
+              let outputFormat = AVAudioFormat(standardFormatWithSampleRate: targetSampleRate, channels: 1)
+        else { return nil }
+        if converter == nil || converterInputRate != inputRate {
+            converter = AVAudioConverter(from: inputFormat, to: outputFormat)
+            converterInputRate = inputRate
+        }
+        guard let converter,
+              let inputBuffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: AVAudioFrameCount(input.count))
+        else { return nil }
+        inputBuffer.frameLength = AVAudioFrameCount(input.count)
+        input.withUnsafeBufferPointer { inputBuffer.floatChannelData![0].update(from: $0.baseAddress!, count: input.count) }
+
+        let capacity = AVAudioFrameCount(Double(input.count) * targetSampleRate / inputRate) + 64
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: capacity) else { return nil }
+        var consumed = false
+        var error: NSError?
+        // `.noDataNow` (not `.endOfStream`) keeps the converter's filter
+        // state across buffers, so consecutive callbacks join seamlessly.
+        let status = converter.convert(to: outputBuffer, error: &error) { _, outStatus in
+            if consumed {
+                outStatus.pointee = .noDataNow
+                return nil
+            }
+            consumed = true
+            outStatus.pointee = .haveData
+            return inputBuffer
+        }
+        guard status != .error, let data = outputBuffer.floatChannelData else { return nil }
+        return Array(UnsafeBufferPointer(start: data[0], count: Int(outputBuffer.frameLength)))
     }
 
     var availableCount: Int {

@@ -78,4 +78,24 @@ struct MixerTests {
         #expect(Mixer.softLimit(5) < 1.0)
         #expect(Mixer.softLimit(5) > 0.999)
     }
+
+    @Test func framesToMixWaitsForTheLateSourceInsteadOfPadding() {
+        // System's buffer is a few ms late: mix only what both have.
+        #expect(Mixer.framesToMix(micAvailable: 4800, systemAvailable: 2048, maxLag: 24000) == 2048)
+        #expect(Mixer.framesToMix(micAvailable: 0, systemAvailable: 4800, maxLag: 24000) == 0)
+    }
+
+    @Test func framesToMixPadsOnlyAStalledSource() {
+        // System delivered nothing for >500ms: keep the mic flowing, holding
+        // back exactly maxLag frames.
+        #expect(Mixer.framesToMix(micAvailable: 30000, systemAvailable: 0, maxLag: 24000) == 6000)
+    }
+
+    @Test func framesToMixWithoutSystemSourceTakesAllMic() {
+        #expect(Mixer.framesToMix(micAvailable: 1234, systemAvailable: nil, maxLag: 24000) == 1234)
+    }
+
+    @Test func framesToMixFlushTakesEverything() {
+        #expect(Mixer.framesToMix(micAvailable: 100, systemAvailable: 900, maxLag: 24000, flush: true) == 900)
+    }
 }

@@ -30,6 +30,22 @@ enum Mixer {
         tanh(sample)
     }
 
+    /// How many frames to mix in one pump pass, given how much each source
+    /// has queued. Normally only the frames *both* sources have delivered
+    /// (`min`), so ordinary buffer-arrival jitter just waits for the late
+    /// source instead of filling its gap with silence — doing the latter
+    /// every 50ms tick is what made recordings choppy (2026-10-05). Only when
+    /// one source has fallen more than `maxLag` frames behind (it stalled:
+    /// device switch, tap died) is it zero-padded, so the other keeps
+    /// flowing. `systemAvailable == nil` means there is no system source.
+    /// `flush` (on stop) takes everything that's left.
+    static func framesToMix(micAvailable: Int, systemAvailable: Int?, maxLag: Int, flush: Bool = false) -> Int {
+        guard let systemAvailable else { return micAvailable }
+        let longest = max(micAvailable, systemAvailable)
+        if flush { return longest }
+        return max(min(micAvailable, systemAvailable), longest - maxLag)
+    }
+
     /// Pads with trailing zeros so both streams cover the same number of
     /// frames — used to cover input gaps during device reconfiguration and
     /// keep the recording's timeline continuous.
