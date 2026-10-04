@@ -35,7 +35,6 @@ final class FloatingWidgetPanel {
     private var currentDisplayedElapsed: TimeInterval = 0
     private var markPulse = 0
     private var screenshotPulse = 0
-    private var moveObserver: NSObjectProtocol?
     private var resizeObserver: NSObjectProtocol?
     private var commandDragMonitor: Any?
 
@@ -81,7 +80,7 @@ final class FloatingWidgetPanel {
         isExpanded = false
         hostingView?.cornerRadius = Self.pillCornerRadius
         applyFrame(for: PillView.size, panel: panel, display: false)
-        positionAtDefaultOrRestoredOrigin(panel)
+        positionAtFrontmostWindowTopRight(panel)
         rebuildContent()
         guard !KYMotion.reduceMotion else {
             panel.alphaValue = 1
@@ -258,14 +257,6 @@ final class FloatingWidgetPanel {
         hostingView.frame = NSRect(origin: .zero, size: PillView.size)
         panel.contentView = hostingView
 
-        moveObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didMoveNotification,
-            object: panel,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.persistOriginIfOnScreen() }
-        }
-
         resizeObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didEndLiveResizeNotification,
             object: panel,
@@ -353,34 +344,67 @@ final class FloatingWidgetPanel {
         }
     }
 
-    private func positionAtDefaultOrRestoredOrigin(_ panel: NSPanel) {
-        if let origin = Preferences.shared.floatingWidgetOrigin, isOnScreen(origin, size: PillView.size) {
-            panel.setFrameOrigin(origin)
-        } else {
-            panel.setFrameOrigin(defaultOrigin())
-        }
+    /// Every recording starts with the pill in the top-right corner of the
+    /// window the user is looking at (Jakob, 2026-10-04) — not wherever it was
+    /// last dragged to, which could be a spot on another display, or one that
+    /// is barely on screen after the display arrangement changes, so the
+    /// widget seemed to be missing. Dragging it still works for the rest of
+    /// that recording.
+    private func positionAtFrontmostWindowTopRight(_ panel: NSPanel) {
+        panel.setFrameOrigin(defaultOrigin())
     }
 
     private func defaultOrigin() -> NSPoint {
-        guard let screen = NSScreen.main else { return .zero }
-        let frame = screen.visibleFrame
-        // Top-right, just under the menu bar — where the capsule reads as a
-        // "dynamic island" for the recording, clear of most meeting UIs.
-        let x = frame.maxX - PillView.size.width - 16
-        let y = frame.maxY - PillView.size.height - 16
-        return NSPoint(x: x, y: y)
+        if let window = Self.frontmostWindowFrame(),
+           let screen = NSScreen.screens.max(by: { Self.overlapArea($0.frame, window) < Self.overlapArea($1.frame, window) }),
+           Self.overlapArea(screen.frame, window) > 0 {
+            return Self.pillOrigin(windowFrame: window, visibleFrame: screen.visibleFrame, size: PillView.size)
+        }
+        // No usable frontmost window (our own app is frontmost, or nothing is
+        // open): top-right of the screen the mouse is on.
+        let mouse = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main else { return .zero }
+        return Self.pillOrigin(windowFrame: screen.visibleFrame, visibleFrame: screen.visibleFrame, size: PillView.size)
     }
 
-    private func isOnScreen(_ origin: CGPoint, size: CGSize) -> Bool {
-        let rect = NSRect(origin: origin, size: size)
-        return NSScreen.screens.contains { $0.frame.intersects(rect) }
+    /// Top-right of `windowFrame` inset by `inset`, clamped so the whole pill
+    /// stays inside `visibleFrame` (a window can extend under the menu bar or
+    /// off the edge of the screen). Cocoa coordinates (origin bottom-left).
+    nonisolated static func pillOrigin(windowFrame: NSRect, visibleFrame: NSRect, size: CGSize, inset: CGFloat = 16) -> NSPoint {
+        let minX = visibleFrame.minX + inset
+        let maxX = visibleFrame.maxX - size.width - inset
+        let minY = visibleFrame.minY + inset
+        let maxY = visibleFrame.maxY - size.height - inset
+        let x = windowFrame.maxX - size.width - inset
+        let y = windowFrame.maxY - size.height - inset
+        return NSPoint(x: max(minX, min(x, maxX)), y: max(minY, min(y, maxY)))
     }
 
-    private func persistOriginIfOnScreen() {
-        guard let panel, !isExpanded else { return } // only the pill's position is meaningful to restore
-        let origin = panel.frame.origin
-        guard isOnScreen(origin, size: PillView.size) else { return }
-        Preferences.shared.floatingWidgetOrigin = origin
+    nonisolated private static func overlapArea(_ a: NSRect, _ b: NSRect) -> CGFloat {
+        let r = a.intersection(b)
+        return r.isNull ? 0 : r.width * r.height
+    }
+
+    /// Frame of the frontmost app's frontmost normal window, in Cocoa
+    /// coordinates. Window bounds and owner PID don't need screen-recording
+    /// permission (only window titles do).
+    private static func frontmostWindowFrame() -> NSRect? {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.processIdentifier != getpid(),
+              let infoList = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[CFString: Any]],
+              let primaryHeight = NSScreen.screens.first?.frame.maxY
+        else { return nil }
+        for info in infoList { // front-to-back
+            guard info[kCGWindowOwnerPID] as? pid_t == app.processIdentifier,
+                  info[kCGWindowLayer] as? Int == 0,
+                  let boundsDict = info[kCGWindowBounds] as? NSDictionary,
+                  let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary),
+                  bounds.width >= 100, bounds.height >= 100
+            else { continue }
+            // Quartz window bounds are top-left-origin global coordinates.
+            return NSRect(x: bounds.minX, y: primaryHeight - bounds.maxY, width: bounds.width, height: bounds.height)
+        }
+        return nil
     }
 
     /// `didEndLiveResizeNotification` also fires for the pill (nothing
