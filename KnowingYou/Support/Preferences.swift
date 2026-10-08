@@ -23,7 +23,7 @@ final class Preferences {
         case notifyMeetingEnded
         case notifyRecordingSaved
         case hasCompletedOnboarding
-        case floatingWidgetOrigin
+        case floatingWidgetTopRight
         case recentRecordingsExpanded
         case notesWindowSize
     }
@@ -174,9 +174,12 @@ final class Preferences {
         return documents.appendingPathComponent(folderName).path
     }
 
-    var floatingWidgetOrigin: CGPoint? {
+    /// Where the floating widget's top-right corner was when last moved or
+    /// closed (screen coordinates). The top-right, not the origin, because
+    /// the widget morphs between pill and notes sizes anchored there.
+    var floatingWidgetTopRight: CGPoint? {
         get {
-            guard let data = defaults.data(forKey: Key.floatingWidgetOrigin.rawValue),
+            guard let data = defaults.data(forKey: Key.floatingWidgetTopRight.rawValue),
                   let point = try? JSONDecoder().decode(CGPoint.self, from: data) else {
                 return nil
             }
@@ -184,10 +187,10 @@ final class Preferences {
         }
         set {
             guard let newValue else {
-                defaults.removeObject(forKey: Key.floatingWidgetOrigin.rawValue)
+                defaults.removeObject(forKey: Key.floatingWidgetTopRight.rawValue)
                 return
             }
-            defaults.set(try? JSONEncoder().encode(newValue), forKey: Key.floatingWidgetOrigin.rawValue)
+            defaults.set(try? JSONEncoder().encode(newValue), forKey: Key.floatingWidgetTopRight.rawValue)
         }
     }
 

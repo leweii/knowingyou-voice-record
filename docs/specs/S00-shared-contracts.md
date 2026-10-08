@@ -131,7 +131,7 @@ enum AppLanguage: String, Codable, Sendable { case zhHans = "zh-Hans", en = "en"
 | `hotkeysEnabled` | Bool | true | K2 |
 | `notifyMeetingDetected` / `notifyMeetingEnded` / `notifyRecordingSaved` | Bool | true | N2–N4 |
 | `hasCompletedOnboarding` | Bool | false | S05 |
-| `floatingWidgetOrigin` | CGPoint? | nil | S15 |
+| `floatingWidgetTopRight` | CGPoint? | nil | S15 (top-right corner of the widget, screen coordinates; was `floatingWidgetOrigin` until 2026-10-08) |
 | `recentRecordingsExpanded` | Bool | false | P7 |
 
 快捷键由 KeyboardShortcuts 包自行持久化，名字：`toggleRecording`、`quickMark`、`screenshotMark`。

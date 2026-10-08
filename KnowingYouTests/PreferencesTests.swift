@@ -37,9 +37,9 @@ struct PreferencesTests {
         #expect(prefs.knownApps.isEmpty)
     }
 
-    @Test func floatingWidgetOriginDefaultsToNil() {
+    @Test func floatingWidgetTopRightDefaultsToNil() {
         let prefs = makePreferences()
-        #expect(prefs.floatingWidgetOrigin == nil)
+        #expect(prefs.floatingWidgetTopRight == nil)
     }
 
     @Test func notesWindowSizeDefaultsToNil() {
@@ -85,11 +85,11 @@ struct PreferencesTests {
         prefs.autoRecord = true
         prefs.audioFormat = .dualTrack
         prefs.micSelection = .device(uid: "abc-123")
-        prefs.floatingWidgetOrigin = CGPoint(x: 10, y: 20)
+        prefs.floatingWidgetTopRight = CGPoint(x: 10, y: 20)
 
         #expect(prefs.autoRecord == true)
         #expect(prefs.audioFormat == .dualTrack)
         #expect(prefs.micSelection == .device(uid: "abc-123"))
-        #expect(prefs.floatingWidgetOrigin == CGPoint(x: 10, y: 20))
+        #expect(prefs.floatingWidgetTopRight == CGPoint(x: 10, y: 20))
     }
 }
