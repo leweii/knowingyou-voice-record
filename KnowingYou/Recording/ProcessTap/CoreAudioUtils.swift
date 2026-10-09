@@ -64,4 +64,16 @@ enum CoreAudioUtils {
         let status = AudioObjectGetPropertyData(tapID, &address, 0, nil, &size, &asbd)
         return status == noErr ? asbd : nil
     }
+
+    static func nominalSampleRate(_ deviceID: AudioObjectID) -> Double? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var rate = Float64(0)
+        var size = UInt32(MemoryLayout<Float64>.size)
+        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &rate)
+        return status == noErr && rate > 0 ? rate : nil
+    }
 }
