@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Routes the sidebar selection to a page. Page changes cross-fade with a
-/// small upward slide + blur-in (prototype §04).
+/// Routes the sidebar selection to a page. Page changes cross-fade (see
+/// `AnyTransition.pageIn` for why there's no slide or blur).
 struct SettingsRootView: View {
     static let size = CGSize(width: 760, height: 580)
 
@@ -63,23 +63,21 @@ struct SettingsPageScaffold<Content: View>: View {
     }
 }
 
-private struct PageInModifier: ViewModifier {
-    let active: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(active ? 0 : 1)
-            .offset(y: active ? 10 : 0)
-            .blur(radius: active ? 4 : 0)
-    }
-}
-
 extension AnyTransition {
-    /// Insertion: fade + rise + unblur. Removal: instant fade so two pages
-    /// never visibly overlap.
+    /// Insertion: fade in. Removal: instant fade so two pages never visibly
+    /// overlap.
+    ///
+    /// Fade only — no blur-in and no slide-up, though the prototype has both.
+    /// Measured on a 1× external display (2026-10-09, Jakob: "切换 tab 之后才会
+    /// 不够 sharp"): fading and moving the page *together* (even SwiftUI's own
+    /// `.opacity.combined(with: .offset)`) leaves the page's scroll-view
+    /// content showing a snapshot taken mid-slide at a sub-pixel position, so
+    /// its text stays blurry after the animation ends (edge contrast 68.6 vs
+    /// 116.7 when sharp). Fade alone, or slide alone, stays sharp. A lingering
+    /// `.blur(radius: 0)` from the old blur-in had the same kind of effect.
     static var pageIn: AnyTransition {
         .asymmetric(
-            insertion: .modifier(active: PageInModifier(active: true), identity: PageInModifier(active: false)),
+            insertion: .opacity,
             removal: .opacity.animation(.linear(duration: 0.08))
         )
     }
