@@ -26,6 +26,7 @@ final class Preferences {
         case floatingWidgetTopRight
         case recentRecordingsExpanded
         case notesWindowSize
+        case knownAppsRetirementVersion
     }
 
     private let defaults: UserDefaults
@@ -90,6 +91,13 @@ final class Preferences {
     var notifyRecordingSaved: Bool {
         get { defaults.bool(forKey: Key.notifyRecordingSaved.rawValue) }
         set { defaults.set(newValue, forKey: Key.notifyRecordingSaved.rawValue) }
+    }
+
+    /// Which `KnownApps.retirementVersion` has already been applied to
+    /// `knownApps` (see `KnownApps.applyRetirements`). 0 = never.
+    var knownAppsRetirementVersion: Int {
+        get { defaults.integer(forKey: Key.knownAppsRetirementVersion.rawValue) }
+        set { defaults.set(newValue, forKey: Key.knownAppsRetirementVersion.rawValue) }
     }
 
     var hasCompletedOnboarding: Bool {

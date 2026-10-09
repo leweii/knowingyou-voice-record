@@ -29,7 +29,7 @@ ui_refs: [§4 R9]
   | Slack | `com.tinyspeck.slackmacgap` | native | **已用 `mdls` 确认** |
   | Discord | `com.hnc.Discord` | native | **已用 `mdls` 确认** |
   | Webex | `Cisco-Systems.Spark` | native | 猜测，未验证（机器上没装） |
-  | 微信 | `com.tencent.xinWeChat` | native | **已用 `mdls` 确认** |
+  | ~~微信~~ | `com.tencent.xinWeChat` | ~~native~~ | **2026-10-08 已移出默认清单**（见决策记录） |
   | 浏览器（仅提醒） | `com.google.Chrome`（**已确认**）, `com.apple.Safari`, `org.mozilla.firefox`, `com.microsoft.edgemac`, `company.thebrowser.Browser` | browser | Chrome 已确认，其余未测 |
   ```swift
   enum KnownApps {
@@ -84,3 +84,4 @@ ui_refs: [§4 R9]
 | 2026-09-23 | `MeetingDetector` 对 `kAudioHardwarePropertyDevices` 返回的**所有**设备（不筛选是否具备输入流）都挂 `kAudioDevicePropertyDeviceIsRunningSomewhere` 监听 | 和 S06 spike 工具的 `who-uses-mic --watch` 实现完全一致；精确判断"这个设备是否有输入流"需要额外读 `kAudioDevicePropertyStreamConfiguration`（scope input）并解析 `AudioBufferList`，这是这条监听路径本身只是"缩短轮询延迟"的锦上添花（2s 轮询才是 load-bearing 的兜底），投入额外复杂度换取的收益不成比例 |
 | 2026-09-23 | `ProcessObjectReading` 协议方法是同步、非 `async` 的（`func activeInputProcesses() -> [(pid_t, String)]`），`MeetingDetector.poll()` 本身也是同步方法，只在 actor 外部调用点（`start()`里的轮询循环、监听回调里的 `Task { await self.poll() }`）需要 `await` | Core Audio 的这几个属性读取本身就是同步、非阻塞的系统调用（不像 `AudioDeviceStart`/Process Tap 创建那样可能触发 S08 记录的节流延迟），没有必要为一个本质同步的操作引入 `async` 接口；测试里的 `FakeProcessObjectReader` 因此也不需要处理异步 |
 | 2026-09-23 | 没有真实会议软件、没有 Chrome 麦克风场景、没有真实白名单 toggle 联动这三条真机验收标准都标记为无法验证，而不是想办法在这台机器上硬凑一个"近似"验证 | 这台机器上没有安装任何白名单里的应用（S06 spike 报告里已经记录过这一点），装应用、开真实会议、用合成输入操作浏览器都超出了这个环境能负责任地做到的范围（尤其是"开真实会议"还涉及通知无关的人）。诚实标注比编一个假的"验证过"更有价值——S20 的手工测试矩阵会在真实 Mac 上补上这些 |
+| 2026-10-08 | 微信移出默认清单（`KnownApps.retiredDefaultPrefixes`），并通过 `applyRetirements` 从已保存的 `knownApps` 快照里清掉一次（`Preferences.knownAppsRetirementVersion` 记版本，用户之后自己用"添加应用…"加回来的不会再被删）；`looksLikeMeetingApp` 额外排除 bundle ID 含 `.inputmethod.` 的进程 | Jakob 反馈："微信是输入法，不需要检测录音"——用微信/微信输入法（WeType，`com.tencent.inputmethod.wetype`）语音打字时，麦克风被占用会弹"检测到微信开始使用麦克风"。实际使用里微信用麦克风多半是语音输入而不是通话，误报代价远高于漏掉一次微信通话（真要录微信通话可以手动开始，或在设置里自己把微信加回去）。只删 `defaults` 不够：设置页会把合并后的完整清单写回 `Preferences.knownApps`，`merged` 又会把快照里的非默认项当作"用户添加的"保留下来，所以必须做一次性迁移 |

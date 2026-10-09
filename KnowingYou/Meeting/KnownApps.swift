@@ -21,7 +21,6 @@ enum KnownApps {
         KnownApp(bundleIDPrefix: "com.tinyspeck.slackmacgap", displayNameKey: "Slack", kind: .native),
         KnownApp(bundleIDPrefix: "com.hnc.Discord", displayNameKey: "Discord", kind: .native),
         KnownApp(bundleIDPrefix: "Cisco-Systems.Spark", displayNameKey: "Webex", kind: .native),
-        KnownApp(bundleIDPrefix: "com.tencent.xinWeChat", displayNameKey: "微信", kind: .native),
         // Browsers: detection can only prove "the browser is using the mic,"
         // not which site/tab — so these only ever justify a confirmation
         // prompt, never a silent auto-record (S13's job to enforce via `kind`).
@@ -31,6 +30,23 @@ enum KnownApps {
         KnownApp(bundleIDPrefix: "com.microsoft.edgemac", displayNameKey: "Edge", kind: .browser),
         KnownApp(bundleIDPrefix: "company.thebrowser.Browser", displayNameKey: "Arc", kind: .browser),
     ]
+
+    /// Former `defaults` entries that turned out to cause false prompts.
+    /// WeChat (2026-10-08): it takes the mic for voice-to-text typing far more
+    /// often than for calls, so "微信开始使用麦克风" kept prompting while
+    /// Jakob was just typing. Bump `retirementVersion` when adding one.
+    static let retiredDefaultPrefixes: Set<String> = ["com.tencent.xinWeChat"]
+    static let retirementVersion = 1
+
+    /// Settings persists a snapshot of the merged list, so a retired default
+    /// would survive in it (and come back through `merged`). Drops those
+    /// once per `retirementVersion` — once only, so if the user deliberately
+    /// re-adds the app afterwards via "添加应用…", it stays.
+    @MainActor static func applyRetirements(to prefs: Preferences) {
+        guard prefs.knownAppsRetirementVersion < retirementVersion else { return }
+        prefs.knownApps = prefs.knownApps.filter { !retiredDefaultPrefixes.contains($0.bundleIDPrefix) }
+        prefs.knownAppsRetirementVersion = retirementVersion
+    }
 
     /// The list actually used for detection and shown in settings: the
     /// built-in `defaults` plus anything the user added themselves. Persisted
@@ -70,6 +86,9 @@ enum KnownApps {
 
     static func looksLikeMeetingApp(bundleID: String) -> Bool {
         guard !bundleID.hasPrefix("com.apple.") else { return false }
+        // Input methods (e.g. WeType, com.tencent.inputmethod.wetype) use the
+        // mic for dictation, never for meetings.
+        guard !bundleID.lowercased().contains(".inputmethod.") else { return false }
         let lowercased = bundleID.lowercased()
         return meetingKeywords.contains { lowercased.contains($0.lowercased()) }
     }

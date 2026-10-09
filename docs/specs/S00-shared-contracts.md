@@ -131,6 +131,7 @@ enum AppLanguage: String, Codable, Sendable { case zhHans = "zh-Hans", en = "en"
 | `hotkeysEnabled` | Bool | true | K2 |
 | `notifyMeetingDetected` / `notifyMeetingEnded` / `notifyRecordingSaved` | Bool | true | N2–N4 |
 | `hasCompletedOnboarding` | Bool | false | S05 |
+| `knownAppsRetirementVersion` | Int | 0 | S12（已从 `knownApps` 清掉的退役默认应用版本，见 `KnownApps.applyRetirements`） |
 | `floatingWidgetTopRight` | CGPoint? | nil | S15 (top-right corner of the widget, screen coordinates; was `floatingWidgetOrigin` until 2026-10-08) |
 | `recentRecordingsExpanded` | Bool | false | P7 |
 

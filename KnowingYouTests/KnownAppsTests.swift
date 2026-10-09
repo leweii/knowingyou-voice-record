@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import KnowingYou
 
@@ -79,5 +80,38 @@ struct KnownAppsTests {
         // the name — FaceTime is already an exact `defaults` entry, so real
         // Apple meeting software never needs this fallback anyway.
         #expect(!KnownApps.looksLikeMeetingApp(bundleID: "com.apple.SomeMeetingHelper"))
+    }
+
+    // MARK: - Retired defaults (WeChat, 2026-10-08)
+
+    @MainActor private func freshPreferences(_ suite: String = #function) -> Preferences {
+        let name = "com.jakobhe.knowingyou.tests.KnownApps.\(suite)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return Preferences(defaults: defaults)
+    }
+
+    @Test func weChatIsNoLongerADefault() {
+        #expect(KnownApps.match(bundleID: "com.tencent.xinWeChat", in: KnownApps.defaults) == nil)
+    }
+
+    @MainActor @Test func retirementRemovesAPersistedWeChatEntryOnce() {
+        let prefs = freshPreferences()
+        let weChat = KnownApp(bundleIDPrefix: "com.tencent.xinWeChat", displayNameKey: "微信", kind: .native)
+        prefs.knownApps = KnownApps.defaults + [weChat]
+
+        KnownApps.applyRetirements(to: prefs)
+        #expect(!prefs.knownApps.contains(weChat))
+        #expect(KnownApps.match(bundleID: "com.tencent.xinWeChat", in: KnownApps.merged(stored: prefs.knownApps)) == nil)
+
+        // Re-added by the user afterwards: stays.
+        prefs.knownApps.append(weChat)
+        KnownApps.applyRetirements(to: prefs)
+        #expect(prefs.knownApps.contains(weChat))
+    }
+
+    @Test func inputMethodsAreNeverInferredAsMeetingApps() {
+        #expect(!KnownApps.looksLikeMeetingApp(bundleID: "com.example.inputmethod.meetkeyboard"))
+        #expect(KnownApps.looksLikeMeetingApp(bundleID: "com.example.meetnow"))
     }
 }
